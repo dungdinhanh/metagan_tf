@@ -259,59 +259,59 @@ def compute_fid_score_mnist(dbname, input_dir, \
         fid_log.flush()
     
     return fid_value
-
-
-def compute_fid_score_mnist2(dbname, input_dir, \
-                            model, gth_path=None, gen_path=None, \
-                            batch_size=64, \
-                            nb_train=10000, nb_test=10000, \
-                            start=0, niters=300000, step=10000, \
-                            ext='jpg', gpu="0"):
-    tf.reset_default_graph()
-
-    os.environ['CUDA_VISIBLE_DEVICES'] = gpu
-
-    print('[eval.py -- compute_fid_score_mnist] computing FID score ...')
-
-    logfile = os.path.join(input_dir, model, model + '_fid_%d_%d.txt' % (start, niters))
-    print('[eval.py -- compute_fid_score_mnist] FID file: %s' % (logfile))
-
-    fid_log = open(logfile, 'w')
-
-    if (gth_path is None) or (not gth_path):
-        gth_path = os.path.join(input_dir, model, dbname, 'real/')  # set path to some ground truth images
-
-    model_path = "./support/pretrained-model/model.ckpt"
-    classifier = classify()
-    classifier.Build_model()
-
-    run_config = tf.ConfigProto()
-    run_config.gpu_options.allow_growth = True
-    sess = tf.Session(config=run_config)
-
-    # compute statistic for real samples
-    real_act = classifier.Compute_Activations(sess, source=gth_path, model_path=model_path, ext=ext, restore=True)
-
-    m1, s1 = fid.calculate_activation_statistics2(real_act.reshape(nb_train, -1))
-
-    for i in range(start, niters + 1, step):
-        if i == 0:
-            continue
-
-        gen_path = os.path.join(input_dir, model, dbname, 'fake_%d/' % i)  # set path to some ground truth images
-
-        # compute statistic for fake samples
-        print('[eval.py -- compute_fid_score_mnist] gen_path = %s' % (gen_path))
-
-        fake_act = classifier.Compute_Activations(sess, source=gen_path, model_path=model_path, ext=ext)
-
-        m2, s2 = fid.calculate_activation_statistics2(fake_act.reshape(nb_test, -1))
-
-        fid_value = fid.calculate_frechet_distance(m1, s1, m2, s2)
-
-        strout = "step: %d - FID: %s" % (i, fid_value)
-        print(strout)
-        fid_log.write(strout + '\n')
-        fid_log.flush()
-
-    return fid_value
+#
+#
+# def compute_fid_score_mnist2(dbname, input_dir, \
+#                             model, gth_path=None, gen_path=None, \
+#                             batch_size=64, \
+#                             nb_train=10000, nb_test=10000, \
+#                             start=0, niters=300000, step=10000, \
+#                             ext='jpg', gpu="0"):
+#     tf.reset_default_graph()
+#
+#     os.environ['CUDA_VISIBLE_DEVICES'] = gpu
+#
+#     print('[eval.py -- compute_fid_score_mnist] computing FID score ...')
+#
+#     logfile = os.path.join(input_dir, model, model + '_fid_%d_%d.txt' % (start, niters))
+#     print('[eval.py -- compute_fid_score_mnist] FID file: %s' % (logfile))
+#
+#     fid_log = open(logfile, 'w')
+#
+#     if (gth_path is None) or (not gth_path):
+#         gth_path = os.path.join(input_dir, model, dbname, 'real/')  # set path to some ground truth images
+#
+#     model_path = "./support/pretrained-model/model.ckpt"
+#     classifier = classify()
+#     classifier.Build_model()
+#
+#     run_config = tf.ConfigProto()
+#     run_config.gpu_options.allow_growth = True
+#     sess = tf.Session(config=run_config)
+#
+#     # compute statistic for real samples
+#     real_act = classifier.Compute_Activations(sess, source=gth_path, model_path=model_path, ext=ext, restore=True)
+#
+#     m1, s1 = fid.calculate_activation_statistics2(real_act.reshape(nb_train, -1))
+#
+#     for i in range(start, niters + 1, step):
+#         if i == 0:
+#             continue
+#
+#         gen_path = os.path.join(input_dir, model, dbname, 'fake_%d/' % i)  # set path to some ground truth images
+#
+#         # compute statistic for fake samples
+#         print('[eval.py -- compute_fid_score_mnist] gen_path = %s' % (gen_path))
+#
+#         fake_act = classifier.Compute_Activations(sess, source=gen_path, model_path=model_path, ext=ext)
+#
+#         m2, s2 = fid.calculate_activation_statistics2(fake_act.reshape(nb_test, -1))
+#
+#         fid_value = fid.calculate_frechet_distance(m1, s1, m2, s2)
+#
+#         strout = "step: %d - FID: %s" % (i, fid_value)
+#         print(strout)
+#         fid_log.write(strout + '\n')
+#         fid_log.flush()
+#
+#     return fid_value
