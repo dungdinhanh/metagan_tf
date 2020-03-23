@@ -9,7 +9,7 @@ from modules.fiutils import mkdirs
 from modules.net_metagan  import  *
 
 from support.mnist_classifier import classify
-
+import glob
 DISCRIMINATOR = 'discriminator'
 DISCRIMINATOR_AUX = 'discriminator_aux'
 GENERATOR = 'generator'
@@ -236,8 +236,13 @@ class MetaGan(object):
             self.D = self.create_meta_discriminator()
             self.d_real_prim_logits,  self.d_real_aux_logits = self.D(self.X, self.data_shape, self.weights, reuse=False, aux=aux)
             self.d_fake_prim_logits,  self.d_fake_aux_logits = self.D(self.X_f, self.data_shape, self.weights, reuse=True, aux=aux)
+
+
             self.get_d_fake_prim_sig = tf.nn.sigmoid(self.d_fake_prim_logits)
             self.get_d_fake_aux_sig = tf.nn.sigmoid(self.d_fake_aux_logits)
+
+            self.get_d_real_prim_sig = tf.nn.sigmoid(self.d_real_prim_logits)
+            self.get_d_real_aux_sig = tf.nn.sigmoid(self.d_real_aux_logits)
             # self.get_d_real = (self.d_real_prim_logits, self.d_real_aux_logits)
             # only compute gradient penalty for discriminator loss when: lambda_gp > 0 to speed up the program
             if self.lambda_gp > 0.0:
@@ -405,8 +410,8 @@ class MetaGan(object):
         fid = open(self.log_file,"w")
         fid_lb = open(self.log_file_lb, "w")
         
-        saver = tf.train.Saver(var_list = self.vars_g_save + self.vars_d_save, max_to_keep=1)
-       
+        # saver = tf.train.Saver(var_list = self.vars_g_save + self.vars_d_save, max_to_keep=1)
+        saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
         with tf.Session(config=run_config) as sess:
             
             start = time.time()
@@ -489,54 +494,251 @@ class MetaGan(object):
                             for ii in range(np.shape(mb_z)[0]):
                                 if count < self.nb_test_fake:
                                     sig_real = real_fake[ii]
-                                    if sig_real < 0.5:
-                                        is_real = False
-                                    else:
-                                        is_real =True
-                                    if is_real:
-                                        chosen_labels = label_guess[ii, 1*self.psi[1]: self.psi[1] + self.psi[1]]
-                                    else:
-                                        chosen_labels = label_guess[ii, 0 * self.psi[0]: 0*self.psi[0] + self.psi[0]]
-                                    image_label = np.argmax(chosen_labels)
-                                    if is_real:
-                                        label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
-                                    else:
-                                        label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
-                                    mkdirs(label_folder)
-                                    fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+                                    # if sig_real < 0.5:
+                                    #     is_real = False
+                                    # else:
+                                    #     is_real = True
+                                    # if is_real:
+                                    #     chosen_labels = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                                    # else:
+                                    #     chosen_labels = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+                                    chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                                    chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+                                    image_label_real = np.argmax(chosen_labels_real)
+                                    image_label_fake = np.argmax(chosen_labels_fake)
+                                    # image_label = np.argmax(chosen_labels)
+                                    # if is_real:
+                                    #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
+                                    # else:
+                                    #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
+                                    label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                                    label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
+                                    mkdirs(label_folder_pos)
+                                    mkdirs(label_folder_neg)
+                                    # mkdirs(label_folder)
+                                    # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+                                    fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                                    fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]))
                                     fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                                    imwrite(im_fake_save[ii,:,:,:], fake_path)
-                                    imwrite(im_fake_save[ii,:,:,:], fake_path2)
+                                    # imwrite(im_fake_save[ii,:,:,:], fake_path)
+                                    imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
+                                    imwrite(im_fake_save[ii, :, :, :], fake_path_neg)
+                                    imwrite(im_fake_save[ii, :, :, :], fake_path2)
                                     count = count + 1
 
-                if step > 0 and step % int(self.n_steps/2) == 0:
+
+
+
+                if step%170==0:
+                    print("Training Label generator")
+                    for step1 in range(170):
+                        mb_X = self.dataset.next_batch()
+                        mb_z = self.sample_z(np.shape(mb_X)[0])
+                        sess.run([self.opt_l], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+
+                        if step % self.log_interval == 0:
+                            if self.verbose:
+                                # compute losses for printing out
+                                elapsed = int(time.time() - start)
+
+                                # loss_d, loss_g = sess.run([self.d_cost, self.g_cost],
+                                #                           feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                                loss_l = sess.run(self.l_cost,
+                                                  feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                                output_str = '[metagan.py -- train label generator] ' \
+                                             + 'step: %d, ' % (step1) \
+                                             + 'L loss: %f, ' % (loss_l) \
+                                             + 'time: %d s' % (elapsed)
+
+                                print(output_str)
+                                fid_lb.write(str(output_str) + '\n')
+                                fid_lb.flush()
+
+                if step > 0 and step % 25000 == 0:
                     if not os.path.exists(self.ckpt_dir +'%d/'%(step)):
                         os.makedirs(self.ckpt_dir +'%d/'%(step))
                     save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step,step))
                     print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
+                    # print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
 
-            print("Training Label generator")
-            for step in range(self.n_steps + 1):
-                # train label generator
-                sess.run(self.copy_params_op, feed_dict={})
-                mb_X = self.dataset.next_batch()
-                mb_z = self.sample_z(np.shape(mb_X)[0])
-                sess.run([self.opt_l], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+    # def checkpoint_train(self):
+    #     """
+    #     Training the model
+    #     """
+    #     # aux = False
+    #     run_config = tf.ConfigProto()
+    #     run_config.gpu_options.allow_growth = True
+    #
+    #     self.log_file_lb = self.log_file.split(".")[0] + "_lb.txt"
+    #
+    #     saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
+    #
+    #     with tf.Session(config=run_config) as sess:
+    #         sess.run(self.init)
+    #         list_folders = glob.glob(os.path.join(self.ckpt_dir, "*"))
+    #         for folder in list_folders:
+    #             ckpt_name = os.path.join(folder, "checkpoint.ckpt")
+    #             print(folder)
+    #             iter = int(folder.split("/")[-1])
+    #             saver.restore(sess, save_path=ckpt_name)
+    #
+    #             for v in range(self.nb_test_fake // self.batch_size + 1):
+    #                 mb_z = self.sample_z(np.shape(self.batch_size)[0])
+    #                 im_fake_save = sess.run(self.X_f, feed_dict={self.z: mb_z})
+    #                 real_fake, label_guess = sess.run([self.get_d_fake_prim_sig, self.get_d_fake_aux_sig],
+    #                                                   feed_dict={self.X_f: im_fake_save})
+    #                 real_fake = np.asarray(real_fake)
+    #                 label_guess = np.asarray(label_guess)
+    #                 im_fake_save = np.reshape(im_fake_save,
+    #                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
+    #                 fake_dir = self.out_dir + '/fake_%d/' % (iter)
+    #                 mkdirs(fake_dir)
+    #                 fake_dir_pos = fake_dir + "positive/"
+    #                 fake_dir_neg = fake_dir + "negative/"
+    #                 mkdirs(fake_dir_neg)
+    #                 mkdirs(fake_dir_pos)
+    #
+    #                 for ii in range(np.shape(mb_z)[0]):
+    #                     if count < self.nb_test_fake:
+    #                         chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+    #                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+    #                         image_label_real = np.argmax(chosen_labels_real)
+    #                         image_label_fake = np.argmax(chosen_labels_fake)
+    #                         # image_label = np.argmax(chosen_labels)
+    #                         # if is_real:
+    #                         #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
+    #                         # else:
+    #                         #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
+    #                         label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+    #                         label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
+    #                         mkdirs(label_folder_pos)
+    #                         mkdirs(label_folder_neg)
+    #                         # mkdirs(label_folder)
+    #                         # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+    #                         fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (
+    #                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
+    #                         fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (
+    #                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
+    #                         fake_path2 = fake_dir + '/image_%05d.jpg' % (
+    #                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
+    #                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
+    #                         imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
+    #                         imwrite(im_fake_save[ii, :, :, :], fake_path_neg)
+    #                         imwrite(im_fake_save[ii, :, :, :], fake_path2)
+    #                         count = count + 1
 
-                if step % self.log_interval == 0:
-                    if self.verbose:
-                        # compute losses for printing out
-                        elapsed = int(time.time() - start)
+    def checkpoint_train(self):
+        """
+        Training the model
+        """
+        # aux = False
+        run_config = tf.ConfigProto()
+        run_config.gpu_options.allow_growth = True
 
-                        # loss_d, loss_g = sess.run([self.d_cost, self.g_cost],
-                        #                           feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
-                        loss_l = sess.run(self.l_cost, feed_dict={self.X: mb_X, self.z:mb_z, self.iteration:step})
-                        output_str = '[metagan.py -- train label generator] ' \
-                                     + 'step: %d, ' % (step) \
-                                     + 'L loss: %f, ' % (loss_l) \
-                                     + 'time: %d s' % (elapsed)
+        self.log_file_lb = self.log_file.split(".")[0] + "_lb.txt"
 
-                        print(output_str)
-                        fid_lb.write(str(output_str) + '\n')
-                        fid_lb.flush()
+        saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
+
+        with tf.Session(config=run_config) as sess:
+            sess.run(self.init)
+            folder = os.path.join(self.ckpt_dir, "300000")
+            # for folder in list_folders:
+            ckpt_name = os.path.join(folder, "epoch_300000.ckpt")
+            print(folder)
+            iter = int(folder.split("/")[-1])
+            saver.restore(sess, save_path=ckpt_name)
+            count = 0
+            for v in range(self.nb_test_fake // self.batch_size + 1):
+                mb_X, mb_l = self.dataset.next_batch_with_labels()
+                # mb_z = self.sample_z(np.shape(mb_X)[0])
+                im_real_save = mb_X
+                real_fake, label_guess = sess.run([self.get_d_real_prim_sig, self.get_d_real_aux_sig],
+                                                  feed_dict={self.X: im_real_save})
+                real_fake = np.asarray(real_fake)
+                label_guess = np.asarray(label_guess)
+                im_real_save = np.reshape(im_real_save,
+                                          (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
+                # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
+                # mkdirs(fake_dir)
+                # fake_dir_pos = fake_dir + "positive/"
+                # fake_dir_neg = fake_dir + "negative/"
+                # mkdirs(fake_dir_neg)
+                # mkdirs(fake_dir_pos)
+
+                for ii in range(np.shape(mb_X)[0]):
+                    if count < self.nb_test_fake:
+                        chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                        chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+                        image_label_real = np.argmax(chosen_labels_real)
+                        image_label_fake = np.argmax(chosen_labels_fake)
+
+                        real_label = mb_l[ii]
+
+                        fake_dir = self.out_dir + '/real_test_discriminator/'
+                        mkdirs(fake_dir)
+                        fake_dir = os.path.join(fake_dir, "class_%d"%int(real_label))
+                        mkdirs(fake_dir)
+                        fake_dir_pos = os.path.join(fake_dir, "positive")
+                        fake_dir_neg = os.path.join(fake_dir, "negative")
+                        mkdirs(fake_dir_neg)
+                        mkdirs(fake_dir_pos)
+
+                        # image_label = np.argmax(chosen_labels)
+                        # if is_real:
+                        #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
+                        # else:
+                        #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
+                        label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                        label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
+                        mkdirs(label_folder_pos)
+                        mkdirs(label_folder_neg)
+                        # mkdirs(label_folder)
+                        # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+                        fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                        fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                        fake_path2 = fake_dir + '/image_%05d.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                        # imwrite(im_fake_save[ii,:,:,:], fake_path)
+                        imwrite(im_real_save[ii, :, :, :], fake_path_pos)
+                        imwrite(im_real_save[ii, :, :, :], fake_path_neg)
+                        # imwrite(im_real_save[ii, :, :, :], fake_path2)
+                        count = count + 1
+
+
+
+
+
+# sig_real = real_fake[ii]
+# if sig_real < 0.5:
+#     is_real = False
+# else:
+#     is_real =True
+# if is_real:
+#     chosen_labels = label_guess[ii, 1*self.psi[1]: self.psi[1] + self.psi[1]]
+# else:
+#     chosen_labels = label_guess[ii, 0 * self.psi[0]: 0*self.psi[0] + self.psi[0]]
+# image_label = np.argmax(chosen_labels)
+# # if is_real:
+# #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
+# # else:
+# #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
+# label_folder_pos = fake_dir_pos + "/class_%d"%(int(image_label))
+# label_folder_neg = fake_dir_neg + "/class_%d"%(int(image_label))
+# mkdirs(label_folder_pos)
+# mkdirs(label_folder_neg)
+# # mkdirs(label_folder)
+# # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+# fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+# fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+# fake_path2 = fake_dir + '/image_%05d.jpg' % (
+#     np.min([v * self.batch_size + ii, self.nb_test_fake]))
+# # imwrite(im_fake_save[ii,:,:,:], fake_path)
+# imwrite(im_fake_save[ii,:,:,:], fake_path_pos)
+# imwrite(im_fake_save[ii,:,:,:], fake_path_neg)
+# imwrite(im_fake_save[ii,:,:,:], fake_path2)
+# count = count + 1

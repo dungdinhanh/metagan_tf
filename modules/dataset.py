@@ -61,7 +61,18 @@ class Dataset(object):
                 self.minibatches, self.minilabels = self.random_mini_batches(self.data.T, self.labels.T, self.batch_size, self.seed)
             batch = self.minibatches[self.count]
             self.count = self.count + 1
-            return batch.T        
+            return batch.T
+
+    def next_batch_with_labels(self):
+
+        if self.name in ['mnist']:
+            if self.count == len(self.minibatches):
+                self.count = 0
+                self.minibatches, self.minilabels = self.random_mini_batches(self.data.T, self.labels.T, self.batch_size, self.seed)
+            batch = self.minibatches[self.count]
+            labels = self.minilabels[self.count]
+            self.count = self.count + 1
+            return batch.T, labels.T
                
 
     def fixed_mini_batches(self, mini_batch_size = 64):
