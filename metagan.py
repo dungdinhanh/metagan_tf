@@ -411,8 +411,14 @@ class MetaGan(object):
         fid_lb = open(self.log_file_lb, "w")
         
         # saver = tf.train.Saver(var_list = self.vars_g_save + self.vars_d_save, max_to_keep=1)
-        saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
+        saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=20)
         step1=0
+
+        log_file_classification_real = self.out_dir + "_positive.csv"
+        log_file_classification_fake = self.out_dir + "_negative.csv"
+        f_real = open(log_file_classification_real, "w")
+        f_fake = open(log_file_classification_fake, "w")
+
         with tf.Session(config=run_config) as sess:
             
             start = time.time()
@@ -518,12 +524,30 @@ class MetaGan(object):
                                     mkdirs(label_folder_neg)
                                     # mkdirs(label_folder)
                                     # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
-                                    fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (
-                                        np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                                    fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (
-                                        np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                                    fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                        float(chosen_labels_real[image_label_real]))
+                                    fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                        float(chosen_labels_fake[image_label_fake]))
                                     fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                                    log_string_real = self.get_log_string_csv(
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                                    log_string_fake = self.get_log_string_csv(
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                                    f_real.write(log_string_real)
+                                    f_real.flush()
+
+                                    f_fake.write(log_string_fake)
+                                    f_fake.flush()
+
+                                    # fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (
+                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                                    # fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (
+                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                                    # fake_path2 = fake_dir + '/image_%05d.jpg' % (
+                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]))
                                     # imwrite(im_fake_save[ii,:,:,:], fake_path)
                                     imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
                                     imwrite(im_fake_save[ii, :, :, :], fake_path_neg)
@@ -562,7 +586,7 @@ class MetaGan(object):
                 if step > 0 and step % 25000 == 0:
                     if not os.path.exists(self.ckpt_dir +'%d/'%(step)):
                         os.makedirs(self.ckpt_dir +'%d/'%(step))
-                    save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step,step))
+                    save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step,step), global_step=step)
                     print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
                     # print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
 
