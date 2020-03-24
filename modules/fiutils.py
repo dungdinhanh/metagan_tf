@@ -16,8 +16,8 @@ def mkdirs(new_dir):
     if not os.path.exists(new_dir):
         print('[fiutils.py -- mkdirs] creating dir: %s' % (new_dir))
         os.makedirs(new_dir)
-    else:
-        print('[fiutils.py -- mkdirs] %s is existing, no need to re-create' % (new_dir))
+    # else:
+    #     print('[fiutils.py -- mkdirs] %s is existing, no need to re-create' % (new_dir))
 
 def copy_all_files(src_dir, dst_dir):
     src_files = os.listdir(src_dir)

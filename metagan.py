@@ -647,9 +647,10 @@ class MetaGan(object):
         # aux = False
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth = True
-
-        self.log_file_classification_real = self.out_dir + "_real_positive_classification.csv"
-        self.log_file_classification_fake = self.out_dir + "_real_negative_classification.csv"
+        real_test_dir = self.out_dir + '/real_test_discriminator/'
+        mkdirs(real_test_dir)
+        self.log_file_classification_real = os.path.join(real_test_dir, "positive_classification.csv")
+        self.log_file_classification_fake = os.path.join(real_test_dir, "negative_classification.csv")
         f_real = open(self.log_file_classification_real, "w")
         f_fake = open(self.log_file_classification_fake, "w")
 
@@ -681,6 +682,7 @@ class MetaGan(object):
                 # mkdirs(fake_dir_neg)
                 # mkdirs(fake_dir_pos)
 
+
                 for ii in range(np.shape(mb_X)[0]):
                     if count < self.nb_test_fake:
                         chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
@@ -690,9 +692,8 @@ class MetaGan(object):
 
                         real_label = mb_l[ii]
 
-                        fake_dir = self.out_dir + '/real_test_discriminator/'
-                        mkdirs(fake_dir)
-                        fake_dir = os.path.join(fake_dir, "class_%d"%int(real_label))
+
+                        fake_dir = os.path.join(real_test_dir, "class_%d"%int(real_label))
                         mkdirs(fake_dir)
                         fake_dir_pos = os.path.join(fake_dir, "positive")
                         fake_dir_neg = os.path.join(fake_dir, "negative")
