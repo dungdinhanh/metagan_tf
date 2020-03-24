@@ -406,12 +406,13 @@ class MetaGan(object):
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth = True
 
-        self.log_file_lb = self.log_file.split(".")[0] + "_lb.txt"
+        self.log_file_lb = self.out_dir + "_lb.txt"
         fid = open(self.log_file,"w")
         fid_lb = open(self.log_file_lb, "w")
         
         # saver = tf.train.Saver(var_list = self.vars_g_save + self.vars_d_save, max_to_keep=1)
         saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
+        step1=0
         with tf.Session(config=run_config) as sess:
             
             start = time.time()
@@ -534,12 +535,12 @@ class MetaGan(object):
 
                 if step%170==0:
                     print("Training Label generator")
-                    for step1 in range(170):
+                    for i in range(170):
                         mb_X = self.dataset.next_batch()
                         mb_z = self.sample_z(np.shape(mb_X)[0])
                         sess.run([self.opt_l], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
 
-                        if step % self.log_interval == 0:
+                        if step1 % self.log_interval == 0:
                             if self.verbose:
                                 # compute losses for printing out
                                 elapsed = int(time.time() - start)
@@ -556,6 +557,7 @@ class MetaGan(object):
                                 print(output_str)
                                 fid_lb.write(str(output_str) + '\n')
                                 fid_lb.flush()
+                        step1 += 1
 
                 if step > 0 and step % 25000 == 0:
                     if not os.path.exists(self.ckpt_dir +'%d/'%(step)):
@@ -630,6 +632,14 @@ class MetaGan(object):
     #                         imwrite(im_fake_save[ii, :, :, :], fake_path2)
     #                         count = count + 1
 
+    @staticmethod
+    def get_log_string_csv(image_id, np_array):
+        log_string = "%05d, "%image_id
+        for element in np_array:
+            log_string += "%f, "%element
+        log_string += "\n"
+        return log_string
+
     def checkpoint_train(self):
         """
         Training the model
@@ -638,7 +648,10 @@ class MetaGan(object):
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth = True
 
-        self.log_file_lb = self.log_file.split(".")[0] + "_lb.txt"
+        self.log_file_classification_real = self.out_dir + "_real_positive_classification.csv"
+        self.log_file_classification_fake = self.out_dir + "_real_negative_classification.csv"
+        f_real = open(self.log_file_classification_real, "w")
+        f_fake = open(self.log_file_classification_fake, "w")
 
         saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
 
@@ -697,12 +710,19 @@ class MetaGan(object):
                         mkdirs(label_folder_neg)
                         # mkdirs(label_folder)
                         # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
-                        fake_path_pos = label_folder_pos + '/image_%05d.jpg' % (
-                            np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                        fake_path_neg = label_folder_neg + '/image_%05d.jpg' % (
-                            np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                        fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
+                        fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_fake[image_label_fake]))
                         fake_path2 = fake_dir + '/image_%05d.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                        log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        f_real.write(log_string_real)
+                        f_real.flush()
+
+                        f_fake.write(log_string_fake)
+                        f_fake.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
                         imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
