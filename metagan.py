@@ -620,7 +620,7 @@ class MetaGan(object):
             sess.run(self.init)
             folder = os.path.join(self.ckpt_dir, "300000")
             # for folder in list_folders:
-            ckpt_name = os.path.join(folder, "epoch_300000.ckpt")
+            ckpt_name = os.path.join(folder, "epoch_300000.ckpt-300000")
             print(folder)
             iter = int(folder.split("/")[-1])
             saver.restore(sess, save_path=ckpt_name)
@@ -693,6 +693,7 @@ class MetaGan(object):
                         count = count + 1
 
             print("Generating fake")
+            count = 0
             for v in range(self.nb_test_fake // self.batch_size + 1):
                 # mb_X, mb_l = self.dataset.next_batch_with_labels()
                 mb_z = self.sample_z(self.batch_size)
