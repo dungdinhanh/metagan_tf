@@ -674,10 +674,19 @@ class MetaGan(object):
         run_config.gpu_options.allow_growth = True
         real_test_dir = self.out_dir + '/real_test_discriminator/'
         mkdirs(real_test_dir)
-        self.log_file_classification_real = os.path.join(real_test_dir, "positive_classification.csv")
-        self.log_file_classification_fake = os.path.join(real_test_dir, "negative_classification.csv")
+        real_dir = os.path.join(real_test_dir, "real")
+        mkdirs(real_dir)
+        self.log_file_classification_real = os.path.join(real_dir, "positive_classification.csv")
+        self.log_file_classification_fake = os.path.join(real_dir, "negative_classification.csv")
         f_real = open(self.log_file_classification_real, "w")
         f_fake = open(self.log_file_classification_fake, "w")
+        im_fake_dir = os.path.join(real_test_dir, "fake")
+        mkdirs(im_fake_dir)
+        self.log_file_classification_real_imf = os.path.join(im_fake_dir, "positive_classification.csv")
+        self.log_file_classification_fake_imf = os.path.join(im_fake_dir, "negative_classification.csv")
+        f_real_imf = open(self.log_file_classification_real_imf, "w")
+        f_fake_imf = open(self.log_file_classification_fake_imf, "w")
+
 
         saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
 
@@ -718,9 +727,8 @@ class MetaGan(object):
 
                         real_label = mb_l[ii]
 
-                        fake_dir = os.path.join(real_test_dir, "real")
-                        mkdirs(fake_dir)
-                        fake_dir = os.path.join(fake_dir, "class_%d"%int(real_label))
+
+                        fake_dir = os.path.join(real_dir, "class_%d"%int(real_label))
                         mkdirs(fake_dir)
                         fake_dir_pos = os.path.join(fake_dir, "positive")
                         fake_dir_neg = os.path.join(fake_dir, "negative")
@@ -783,10 +791,9 @@ class MetaGan(object):
                         image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
-                        fake_dir = os.path.join(real_test_dir, "fake")
-                        mkdirs(fake_dir)
-                        fake_dir_pos = os.path.join(fake_dir, "positive")
-                        fake_dir_neg = os.path.join(fake_dir, "negative")
+
+                        fake_dir_pos = os.path.join(im_fake_dir, "positive")
+                        fake_dir_neg = os.path.join(im_fake_dir, "negative")
                         mkdirs(fake_dir_neg)
                         mkdirs(fake_dir_pos)
 
@@ -805,15 +812,15 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
                         fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_fake[image_label_fake]))
-                        fake_path2 = fake_dir + '/image_%05d.jpg' % (
+                        fake_path2 = im_fake_dir + '/image_%05d.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
-                        f_real.write(log_string_real)
-                        f_real.flush()
+                        f_real_imf.write(log_string_real)
+                        f_real_imf.flush()
 
-                        f_fake.write(log_string_fake)
-                        f_fake.flush()
+                        f_fake_imf.write(log_string_fake)
+                        f_fake_imf.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
                         imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
