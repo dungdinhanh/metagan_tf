@@ -613,15 +613,32 @@ class MetaGan(object):
         mkdirs(real_dir)
         self.log_file_classification_real = os.path.join(real_dir, "positive_classification.csv")
         self.log_file_classification_fake = os.path.join(real_dir, "negative_classification.csv")
+        self.log_file_classification_label = os.path.join(real_dir, "label_generator.csv")
         f_real = open(self.log_file_classification_real, "w")
         f_fake = open(self.log_file_classification_fake, "w")
+        f_label = open(self.log_file_classification_label, "w")
         im_fake_dir = os.path.join(real_test_dir, "fake")
         mkdirs(im_fake_dir)
         self.log_file_classification_real_imf = os.path.join(im_fake_dir, "positive_classification.csv")
         self.log_file_classification_fake_imf = os.path.join(im_fake_dir, "negative_classification.csv")
+        self.log_file_classification_label_imf = os.path.join(im_fake_dir, "label_generator.csv")
         f_real_imf = open(self.log_file_classification_real_imf, "w")
         f_fake_imf = open(self.log_file_classification_fake_imf, "w")
+        f_label_imf = open(self.log_file_classification_label_imf, "w")
+        # self.d_real_prim_logits_l, self.d_real_aux_logits_l = self.D(self.X, self.data_shape, self.weights, reuse=True,
+        #                                                              name=DISCRIMINATOR,
+        #                                                              aux=aux)
+        # self.d_fake_prim_logits_l, self.d_fake_aux_logits_l = self.D(self.X_f, self.data_shape, self.weights,
+        #                                                              reuse=True, name=DISCRIMINATOR,
+        #                                                              aux=aux)
 
+        # self.label_real_d = self.L(self.X, self.data_shape, np.ones(self.batch_size, dtype=np.int64), dim=self.df_dim,
+        #                            reuse=False, psi=self.psi)
+        # self.label_fake_d = self.L(self.X_f, self.data_shape, np.zeros(self.batch_size, dtype=np.int64),
+        #                            dim=self.df_dim,
+        #                            reuse=True, psi=self.psi)
+        # self.label_real_g = self.L(self.X_f, self.data_shape, np.ones(self.batch_size, dtype=np.int64), dim=self.df_dim,
+        #                            reuse=True, psi=self.psi)
 
         saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
 
@@ -641,8 +658,10 @@ class MetaGan(object):
                 im_real_save = mb_X
                 real_fake, label_guess = sess.run([self.get_d_real_prim_sig, self.get_d_real_aux_sig],
                                                   feed_dict={self.X: im_real_save})
+                label_real_d = sess.run([self.label_real_d], feed_dict={self.X:im_real_save})
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
+                label_real_d = np.asarray(label_real_d)
                 im_real_save = np.reshape(im_real_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
@@ -689,11 +708,15 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_real_d)
                         f_real.write(log_string_real)
                         f_real.flush()
 
                         f_fake.write(log_string_fake)
                         f_fake.flush()
+
+                        f_label.write(log_string_label)
+                        f_label.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
                         imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
@@ -708,10 +731,14 @@ class MetaGan(object):
                 im_fake_save = sess.run(self.X_f, feed_dict={self.z: mb_z})
                 real_fake, label_guess = sess.run([self.get_d_fake_prim_sig, self.get_d_fake_aux_sig],
                                                   feed_dict={self.X_f: im_fake_save})
+                label_fake_d = sess.run([self.label_real_d], feed_dict={self.X: im_fake_save})
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
                 im_real_save = np.reshape(im_fake_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
+                label_fake_d = np.asarray(label_fake_d)
+
+
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
                 # mkdirs(fake_dir)
                 # fake_dir_pos = fake_dir + "positive/"
@@ -752,11 +779,15 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_fake_d)
                         f_real_imf.write(log_string_real)
                         f_real_imf.flush()
 
                         f_fake_imf.write(log_string_fake)
                         f_fake_imf.flush()
+
+                        f_label_imf.write(log_string_label)
+                        f_label_imf.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
                         imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
