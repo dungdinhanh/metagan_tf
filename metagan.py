@@ -741,6 +741,7 @@ class MetaGan(object):
                     if count < self.nb_test_fake:
                         chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+                        label_gen = label_real_d[ii]
                         image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
@@ -773,7 +774,7 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
-                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_real_d)
+                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen)
                         f_real.write(log_string_real)
                         f_real.flush()
 
@@ -815,6 +816,7 @@ class MetaGan(object):
                     if count < self.nb_test_fake:
                         chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+                        label_gen = label_fake_d[ii]
                         image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
@@ -843,7 +845,7 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
-                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_fake_d)
+                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen)
                         f_real_imf.write(log_string_real)
                         f_real_imf.flush()
 
