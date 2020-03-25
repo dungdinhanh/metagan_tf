@@ -359,21 +359,24 @@ class MetaGan(object):
                 self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l2,
                                                                                        labels=tf.ones_like(self.d_real_prim_logits)))
                 self.label_real_d_mean = tf.reduce_mean(self.label_real_d, axis=0)
-                self.cross_entropy_loss_real = self.label_real_d_mean * tf.log(self.label_real_d_mean + 1e-20)
+                self.cross_entropy_loss_real = tf.reduce_sum(self.label_real_d_mean * tf.log(self.label_real_d_mean +
+                                                                                             1e-20))
 
 
                 self.l_fake = tf.reduce_mean(
                     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits_l2, labels=tf.zeros_like(
                         self.d_fake_prim_logits)))
                 self.label_fake_d_mean = tf.reduce_mean(self.label_fake_d, axis=0)
-                self.cross_entropy_loss_fake = self.label_fake_d_mean * tf.log(self.label_fake_d_mean + 1e-20)
+                self.cross_entropy_loss_fake = tf.reduce_sum(self.label_fake_d_mean * tf.log(self.label_fake_d_mean
+                                                                                             + 1e-20))
 
 
                 self.l_gen = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
                     logits=self.d_fake_prim_logits_l2, labels=tf.ones_like(
                         self.d_fake_prim_logits)))
                 self.label_real_g_mean = tf.reduce_mean(self.label_real_g, axis=0)
-                self.cross_entropy_loss_gen = self.label_real_g_mean * tf.log(self.label_real_g_mean + 1e-20)
+                self.cross_entropy_loss_gen = tf.reduce_sum(self.label_real_g_mean * tf.log(self.label_real_g_mean
+                                                                                            + 1e-20))
 
 
                 self.l_cost = self.l_real + self.l_fake + self.l_gen + self.cross_entropy_loss_real + \
