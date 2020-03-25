@@ -183,7 +183,7 @@ def meta_discriminator_dcgan_mnist(img, x_shape, weights,
 
 
 def mask_softmask(x, mask, dim=1):
-    logits = tf.math.exp(x - tf.math.reduce_max(x, 0)) * mask / tf.reduce_sum(tf.math.exp(x - tf.math.reduce_max(x, 0)) * mask, axis=dim, keepdims=True)
+    logits = tf.math.exp(x - tf.reduce_max(x, 0)) * mask / tf.reduce_sum(tf.math.exp(x - tf.reduce_max(x, 0)) * mask, axis=dim, keepdims=True)
     return logits
 
 

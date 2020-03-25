@@ -239,10 +239,10 @@ class MetaGan(object):
 
 
             self.get_d_fake_prim_sig = tf.nn.sigmoid(self.d_fake_prim_logits)
-            self.get_d_fake_aux_sig = tf.nn.sigmoid(self.d_fake_aux_logits)
+            self.get_d_fake_aux_sig = self.d_fake_aux_logits
 
             self.get_d_real_prim_sig = tf.nn.sigmoid(self.d_real_prim_logits)
-            self.get_d_real_aux_sig = tf.nn.sigmoid(self.d_real_aux_logits)
+            self.get_d_real_aux_sig = self.d_real_aux_logits
             # self.get_d_real = (self.d_real_prim_logits, self.d_real_aux_logits)
             # only compute gradient penalty for discriminator loss when: lambda_gp > 0 to speed up the program
             if self.lambda_gp > 0.0:
@@ -669,6 +669,7 @@ class MetaGan(object):
         Training the model
         """
         # aux = False
+        # Generating real
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth = True
         real_test_dir = self.out_dir + '/real_test_discriminator/'
@@ -692,6 +693,7 @@ class MetaGan(object):
             for v in range(self.nb_test_fake // self.batch_size + 1):
                 mb_X, mb_l = self.dataset.next_batch_with_labels()
                 # mb_z = self.sample_z(np.shape(mb_X)[0])
+
                 im_real_save = mb_X
                 real_fake, label_guess = sess.run([self.get_d_real_prim_sig, self.get_d_real_aux_sig],
                                                   feed_dict={self.X: im_real_save})
@@ -716,8 +718,72 @@ class MetaGan(object):
 
                         real_label = mb_l[ii]
 
+                        fake_dir = os.path.join(real_test_dir, "real")
+                        mkdirs(fake_dir)
+                        fake_dir = os.path.join(fake_dir, "class_%d"%int(real_label))
+                        mkdirs(fake_dir)
+                        fake_dir_pos = os.path.join(fake_dir, "positive")
+                        fake_dir_neg = os.path.join(fake_dir, "negative")
+                        mkdirs(fake_dir_neg)
+                        mkdirs(fake_dir_pos)
 
-                        fake_dir = os.path.join(real_test_dir, "class_%d"%int(real_label))
+                        # image_label = np.argmax(chosen_labels)
+                        # if is_real:
+                        #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
+                        # else:
+                        #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
+                        label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                        label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
+                        mkdirs(label_folder_pos)
+                        mkdirs(label_folder_neg)
+                        # mkdirs(label_folder)
+                        # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+                        fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
+                        fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_fake[image_label_fake]))
+                        fake_path2 = fake_dir + '/image_%05d.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]))
+                        log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        f_real.write(log_string_real)
+                        f_real.flush()
+
+                        f_fake.write(log_string_fake)
+                        f_fake.flush()
+                        # imwrite(im_fake_save[ii,:,:,:], fake_path)
+                        imwrite(im_real_save[ii, :, :, :], fake_path_pos)
+                        imwrite(im_real_save[ii, :, :, :], fake_path_neg)
+                        # imwrite(im_real_save[ii, :, :, :], fake_path2)
+                        count = count + 1
+
+            print("Generating fake")
+            for v in range(self.nb_test_fake // self.batch_size + 1):
+                # mb_X, mb_l = self.dataset.next_batch_with_labels()
+                mb_z = self.sample_z(self.batch_size)
+                im_fake_save = sess.run(self.X_f, feed_dict={self.z: mb_z})
+                real_fake, label_guess = sess.run([self.get_d_fake_prim_sig, self.get_d_fake_aux_sig],
+                                                  feed_dict={self.X_f: im_fake_save})
+                real_fake = np.asarray(real_fake)
+                label_guess = np.asarray(label_guess)
+                im_real_save = np.reshape(im_fake_save,
+                                          (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
+                # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
+                # mkdirs(fake_dir)
+                # fake_dir_pos = fake_dir + "positive/"
+                # fake_dir_neg = fake_dir + "negative/"
+                # mkdirs(fake_dir_neg)
+                # mkdirs(fake_dir_pos)
+
+
+                for ii in range(np.shape(im_fake_save)[0]):
+                    if count < self.nb_test_fake:
+                        chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                        chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
+                        image_label_real = np.argmax(chosen_labels_real)
+                        image_label_fake = np.argmax(chosen_labels_fake)
+
+                        fake_dir = os.path.join(real_test_dir, "fake")
                         mkdirs(fake_dir)
                         fake_dir_pos = os.path.join(fake_dir, "positive")
                         fake_dir_neg = os.path.join(fake_dir, "negative")
