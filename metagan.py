@@ -661,7 +661,7 @@ class MetaGan(object):
                 label_real_d = sess.run([self.label_real_d], feed_dict={self.X:im_real_save})
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
-                label_real_d = np.asarray(label_real_d)
+                label_real_d = np.asarray(label_real_d)[0]
                 im_real_save = np.reshape(im_real_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
@@ -737,7 +737,7 @@ class MetaGan(object):
                 label_guess = np.asarray(label_guess)
                 im_real_save = np.reshape(im_fake_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
-                label_fake_d = np.asarray(label_fake_d)
+                label_fake_d = np.asarray(label_fake_d)[0]
 
 
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
