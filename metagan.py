@@ -619,7 +619,7 @@ class MetaGan(object):
         log_string += "\n"
         return log_string
 
-    def checkpoint_train(self):
+    def checkpoint_train(self, iter):
         """
         Training the model
         """
@@ -633,18 +633,22 @@ class MetaGan(object):
         mkdirs(real_dir)
         self.log_file_classification_real = os.path.join(real_dir, "positive_classification.csv")
         self.log_file_classification_fake = os.path.join(real_dir, "negative_classification.csv")
-        self.log_file_classification_label = os.path.join(real_dir, "label_generator.csv")
+        self.log_file_classification_label_pos = os.path.join(real_dir, "label_generator_pos.csv")
+        self.log_file_classification_label_neg = os.path.join(real_dir, "label_generator_neg.csv")
         f_real = open(self.log_file_classification_real, "w")
         f_fake = open(self.log_file_classification_fake, "w")
-        f_label = open(self.log_file_classification_label, "w")
+        f_label_pos = open(self.log_file_classification_label_pos, "w")
+        # f_label_neg = open(self.log_file_classification_label_neg, "w")
         im_fake_dir = os.path.join(real_test_dir, "fake")
         mkdirs(im_fake_dir)
         self.log_file_classification_real_imf = os.path.join(im_fake_dir, "positive_classification.csv")
         self.log_file_classification_fake_imf = os.path.join(im_fake_dir, "negative_classification.csv")
-        self.log_file_classification_label_imf = os.path.join(im_fake_dir, "label_generator.csv")
+        self.log_file_classification_label_pos_imf = os.path.join(im_fake_dir, "label_generator_pos.csv")
+        self.log_file_classification_label_neg_imf = os.path.join(im_fake_dir, "label_generator_neg.csv")
         f_real_imf = open(self.log_file_classification_real_imf, "w")
         f_fake_imf = open(self.log_file_classification_fake_imf, "w")
-        f_label_imf = open(self.log_file_classification_label_imf, "w")
+        f_label_pos_imf = open(self.log_file_classification_label_pos_imf, "w")
+        f_label_neg_imf = open(self.log_file_classification_label_neg_imf, "w")
         # self.d_real_prim_logits_l, self.d_real_aux_logits_l = self.D(self.X, self.data_shape, self.weights, reuse=True,
         #                                                              name=DISCRIMINATOR,
         #                                                              aux=aux)
@@ -664,13 +668,15 @@ class MetaGan(object):
 
         with tf.Session(config=run_config) as sess:
             sess.run(self.init)
-            folder = os.path.join(self.ckpt_dir, "300000")
+            folder = os.path.join(self.ckpt_dir, "%d"%iter)
             # for folder in list_folders:
-            ckpt_name = os.path.join(folder, "epoch_300000.ckpt-300000")
+            ckpt_name = os.path.join(folder, "epoch_%d.ckpt-%d"%(iter, iter))
             print(folder)
-            iter = int(folder.split("/")[-1])
+            # iter = int(folder.split("/")[-1])
             saver.restore(sess, save_path=ckpt_name)
             count = 0
+
+            print("Classifying real")
             for v in range(self.nb_test_fake // self.batch_size + 1):
                 mb_X, mb_l = self.dataset.next_batch_with_labels()
                 # mb_z = self.sample_z(np.shape(mb_X)[0])
@@ -679,6 +685,7 @@ class MetaGan(object):
                 real_fake, label_guess = sess.run([self.get_d_real_prim_sig, self.get_d_real_aux_sig],
                                                   feed_dict={self.X: im_real_save})
                 label_real_d = sess.run([self.label_real_d], feed_dict={self.X:im_real_save})
+
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
                 label_real_d = np.asarray(label_real_d)[0]
@@ -729,15 +736,15 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
-                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen)
+                        log_string_label_pos = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen)
                         f_real.write(log_string_real)
                         f_real.flush()
 
                         f_fake.write(log_string_fake)
                         f_fake.flush()
 
-                        f_label.write(log_string_label)
-                        f_label.flush()
+                        f_label_pos.write(log_string_label_pos)
+                        f_label_pos.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
                         imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
@@ -752,13 +759,15 @@ class MetaGan(object):
                 im_fake_save = sess.run(self.X_f, feed_dict={self.z: mb_z})
                 real_fake, label_guess = sess.run([self.get_d_fake_prim_sig, self.get_d_fake_aux_sig],
                                                   feed_dict={self.X_f: im_fake_save})
-                label_fake_d = sess.run([self.label_real_d], feed_dict={self.X: im_fake_save})
+                label_fake_d = sess.run([self.label_fake_d], feed_dict={self.X_f: im_fake_save})
+                label_real_g = sess.run([self.label_real_g], feed_dict={self.X_f: im_fake_save})
+
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
                 im_real_save = np.reshape(im_fake_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
                 label_fake_d = np.asarray(label_fake_d)[0]
-
+                label_real_g = np.asarray(label_real_g)[0]
 
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
                 # mkdirs(fake_dir)
@@ -772,7 +781,8 @@ class MetaGan(object):
                     if count < self.nb_test_fake:
                         chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                        label_gen = label_fake_d[ii]
+                        label_gen_pos = label_fake_d[ii]
+                        label_gen_neg = label_real_g[ii]
                         image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
@@ -801,15 +811,19 @@ class MetaGan(object):
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
                         log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
-                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen)
+                        log_string_label_pos = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_pos)
+                        log_string_label_neg = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_pos)
                         f_real_imf.write(log_string_real)
                         f_real_imf.flush()
 
                         f_fake_imf.write(log_string_fake)
                         f_fake_imf.flush()
 
-                        f_label_imf.write(log_string_label)
-                        f_label_imf.flush()
+                        f_label_pos_imf.write(log_string_label_pos)
+                        f_label_pos_imf.flush()
+
+                        f_label_neg_imf.write(log_string_label_neg)
+                        f_label_neg_imf.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
                         imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
