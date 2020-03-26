@@ -152,7 +152,7 @@ if __name__ == '__main__':
                         dataset=dataset, \
                         n_steps=n_steps, \
                         out_dir=base_dir)
-        dcgan.checkpoint_train(300000)
+        dcgan.checkpoint_train_history()
 
     elif is_train == 0:
         # compute fid score
