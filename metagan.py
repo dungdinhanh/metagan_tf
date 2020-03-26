@@ -802,8 +802,8 @@ class MetaGan(object):
                     if count < self.nb_test_fake:
                         chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                        label_gen_pos = label_fake_d[ii]
-                        label_gen_neg = label_real_g[ii]
+                        label_gen_neg = label_fake_d[ii]
+                        label_gen_pos = label_real_g[ii]
                         image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
