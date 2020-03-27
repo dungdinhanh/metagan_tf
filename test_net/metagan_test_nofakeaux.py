@@ -231,7 +231,7 @@ class MetaGan(object):
 
                 # for testing
                 self.label_real_d_fake = self.L(self.X, self.data_shape, np.zeros(self.batch_size, dtype=np.int64), dim=self.df_dim,
-                                                reuse=False, psi=self.psi)
+                                                reuse=True, psi=self.psi)
 
 
         # create discriminator
