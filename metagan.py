@@ -231,7 +231,7 @@ class MetaGan(object):
 
                 # for testing
                 self.label_real_d_fake = self.L(self.X, self.data_shape, np.zeros(self.batch_size, dtype=np.int64), dim=self.df_dim,
-                                                reuse=False, psi=self.psi)
+                                                reuse=True, psi=self.psi)
 
 
         # create discriminator
@@ -626,7 +626,8 @@ class MetaGan(object):
     def checkpoint_train_history(self):
         list_iters = glob.glob(os.path.join(self.ckpt_dir, "*"))
         for iter in list_iters:
-            n_iter = int(iter)
+            n_iter = os.path.basename(iter)
+            n_iter = int(n_iter)
             self.checkpoint_train(n_iter)
         pass
 
