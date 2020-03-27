@@ -231,7 +231,7 @@ class MetaGan(object):
 
                 # for testing
                 self.label_real_d_fake = self.L(self.X, self.data_shape, np.zeros(self.batch_size, dtype=np.int64), dim=self.df_dim,
-                                                reuse=True, psi=self.psi)
+                                                reuse=False, psi=self.psi)
 
 
         # create discriminator
@@ -293,42 +293,6 @@ class MetaGan(object):
                                                                              reuse=True, name=DISCRIMINATOR,
                                                                              aux=aux)
 
-                # self.d_real_prim_logits_l, self.d_real_aux_logits_l = self.D(self.X ,self.data_shape, self.weights, reuse=False, name=DISCRIMINATOR,
-                #                                            aux=aux)
-                # self.d_fake_prim_logits_l, self.d_fake_aux_logits_l = self.D(self.X_f, self.data_shape, self.weights, reuse=True, name=DISCRIMINATOR,
-                #                                            aux=aux)
-                #
-                # self.d_real_l = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l,
-                #                                                                        labels=tf.ones_like(
-                #                                                                            self.d_real_prim_logits)))
-                #
-                # self.d_real_aux_l = tf.reduce_mean(
-                #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_aux_logits_l,
-                #                                             labels=self.label_real_d))
-                #
-                # self.d_fake_l = tf.reduce_mean(
-                #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits_l, labels=tf.zeros_like(
-                #         self.d_fake_prim_logits)))
-                # self.d_fake_aux_l = tf.reduce_mean(
-                #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits_l, labels=self.label_fake_d))
-                # if self.lambda_gp > 0.0:
-                #     self.d_cost_gan_l = self.d_real_l + self.d_real_aux_l + self.d_fake_l + self.d_fake_aux_l + self.lambda_gp * self.penalty
-                # else:
-                #     self.d_cost_gan_l = self.d_real_l + self.d_real_aux_l + self.d_fake_l + self.d_fake_aux_l
-                # grads = tf.gradients(self.d_cost_gan_l, list(self.weights.values()))
-                # gradients = dict(zip(self.weights.keys(), grads))
-                # fast_weights = dict(
-                #     zip(self.weights.keys(), [self.weights[key] - self.learning_rate * gradients[key] for key in self.weights.keys()]))
-                # self.d_real_prim_logits_l2, self.d_real_aux_logits_l2 = self.D(self.X, self.data_shape, fast_weights,
-                #                                                              reuse=False, name=DISCRIMINATOR,
-                #                                                              aux=aux)
-                # self.d_fake_prim_logits_l2, self.d_fake_aux_logits_l2 = self.D(self.X_f, self.data_shape, fast_weights,
-                #                                                              reuse=True, name=DISCRIMINATOR,
-                #                                                              aux=aux)
-
-
-
-                
         # Original losses with log function
         if self.loss_type == 'log':
             # Discriminator Loss
@@ -339,7 +303,7 @@ class MetaGan(object):
                 self.d_real_aux = tf.zeros_like(self.d_real)
 
             self.d_fake   = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits, labels=tf.zeros_like(self.d_fake_prim_logits)))
-            if aux:
+            if 1 != 1:
                 self.d_fake_aux   = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits, labels=self.label_fake_d))
             else:
                 self.d_fake_aux = tf.zeros_like(self.d_fake)
@@ -351,7 +315,7 @@ class MetaGan(object):
                     
             # Generator loss
             self.g_cost  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits, labels=tf.ones_like(self.d_fake_prim_logits)))
-            if aux:
+            if 1 != 1:
                 self.g_cost_aux  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits, labels=self.label_real_g))
             else:
                 self.g_cost_aux = tf.zeros_like(self.g_cost)
@@ -367,25 +331,7 @@ class MetaGan(object):
                                                                                              1e-20))
 
 
-                self.l_fake = tf.reduce_mean(
-                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits_l2, labels=tf.zeros_like(
-                        self.d_fake_prim_logits)))
-                self.label_fake_d_mean = tf.reduce_mean(self.label_fake_d, axis=0)
-                self.cross_entropy_loss_fake = tf.reduce_sum(self.label_fake_d_mean * tf.log(self.label_fake_d_mean
-                                                                                             + 1e-20))
-
-
-                self.l_gen = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
-                    logits=self.d_fake_prim_logits_l2, labels=tf.ones_like(
-                        self.d_fake_prim_logits)))
-                self.label_real_g_mean = tf.reduce_mean(self.label_real_g, axis=0)
-                self.cross_entropy_loss_gen = tf.reduce_sum(self.label_real_g_mean * tf.log(self.label_real_g_mean
-                                                                                            + 1e-20))
-
-
-                self.l_cost = self.l_real + self.l_fake + self.l_gen + self.cross_entropy_loss_real + \
-                              self.cross_entropy_loss_fake + self.cross_entropy_loss_gen
-
+                self.l_cost = self.l_real + self.cross_entropy_loss_real
 
 
 
@@ -626,8 +572,7 @@ class MetaGan(object):
     def checkpoint_train_history(self):
         list_iters = glob.glob(os.path.join(self.ckpt_dir, "*"))
         for iter in list_iters:
-            n_iter = os.path.basename(iter)
-            n_iter = int(n_iter)
+            n_iter = int(iter)
             self.checkpoint_train(n_iter)
         pass
 
