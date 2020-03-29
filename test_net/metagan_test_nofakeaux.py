@@ -479,35 +479,35 @@ class MetaGan(object):
                                     #     chosen_labels = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                                     # else:
                                     #     chosen_labels = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                                    chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                                    # chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                                     chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                                    image_label_real = np.argmax(chosen_labels_real)
+                                    # image_label_real = np.argmax(chosen_labels_real)
                                     image_label_fake = np.argmax(chosen_labels_fake)
                                     # image_label = np.argmax(chosen_labels)
                                     # if is_real:
                                     #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
                                     # else:
                                     #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
-                                    label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                                    # label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
                                     label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
-                                    mkdirs(label_folder_pos)
+                                    # mkdirs(label_folder_pos)
                                     mkdirs(label_folder_neg)
                                     # mkdirs(label_folder)
                                     # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
-                                    fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
-                                        np.min([v * self.batch_size + ii, self.nb_test_fake]),
-                                        float(chosen_labels_real[image_label_real]))
+                                    # fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                    #     float(chosen_labels_real[image_label_real]))
                                     fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]),
                                         float(chosen_labels_fake[image_label_fake]))
                                     fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                                    log_string_real = self.get_log_string_csv(
-                                        np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                                    # log_string_real = self.get_log_string_csv(
+                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                                     log_string_fake = self.get_log_string_csv(
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_fake)
-                                    f_real.write(log_string_real)
-                                    f_real.flush()
+                                    # f_real.write(log_string_real)
+                                    # f_real.flush()
 
                                     f_fake.write(log_string_fake)
                                     f_fake.flush()
@@ -519,7 +519,7 @@ class MetaGan(object):
                                     # fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                     #     np.min([v * self.batch_size + ii, self.nb_test_fake]))
                                     # imwrite(im_fake_save[ii,:,:,:], fake_path)
-                                    imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
+                                    # imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
                                     imwrite(im_fake_save[ii, :, :, :], fake_path_neg)
                                     imwrite(im_fake_save[ii, :, :, :], fake_path2)
                                     count = count + 1
