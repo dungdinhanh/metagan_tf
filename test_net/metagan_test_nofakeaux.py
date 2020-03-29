@@ -6,7 +6,7 @@ import time
 from modules.imutils import *
 from modules.mdutils import *
 from modules.fiutils import mkdirs
-from modules.net_metagan  import  *
+from test_net.metagan_nofakeaux import *
 
 from support.mnist_classifier import classify
 import glob

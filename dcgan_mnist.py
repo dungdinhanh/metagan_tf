@@ -26,7 +26,7 @@ if __name__ == '__main__':
     parser.add_argument('--lambda_gp',    type=float, default=0.0,             help='The gradient penalty term')
     parser.add_argument('--percent',      type=float, default=100,             help='The percentage (%) of original dataset, i.e. default = 25%.')
     parser.add_argument('--real_dir',     type=str,   default="",              help='If the real samples are existing to compute FID, do not need to create new real ones')
-        
+    parser.add_argument('--model', type=str, default="dcgan", help="model name")
     opt = parser.parse_args()
         
     '''
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     * Network architectures and objective losses
     ********************************************************************
     '''
-    model     = 'gan'   # the baseline model
+    model     = opt.model   # the baseline model
     
     '''
     network architecture supports: 'dcgan'
