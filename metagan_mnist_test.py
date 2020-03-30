@@ -2,6 +2,7 @@ import os, sys
 import numpy as np
 import argparse
 from   dcgan import DCGAN
+from test_net.metagan_test_nofakeaux import MetaGan
 from   modules.dataset import Dataset
 from   modules.eval import compute_fid_score_mnist
 from   modules.fiutils import mkdirs
@@ -26,10 +27,10 @@ if __name__ == '__main__':
     parser.add_argument('--lambda_gp',    type=float, default=0.0,             help='The gradient penalty term')
     parser.add_argument('--percent',      type=float, default=100,             help='The percentage (%) of original dataset, i.e. default = 25%.')
     parser.add_argument('--real_dir',     type=str,   default="",              help='If the real samples are existing to compute FID, do not need to create new real ones')
-    parser.add_argument('--model', type=str, default="dcgan", help="model name")
+    parser.add_argument('--aux',           type=int, default=1,                 help='0 is for dcgan, 1 is for metagan')
+    parser.add_argument('--model', type=str, default="metagan", help="model name")
+        
     opt = parser.parse_args()
-
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.gpu_id)
         
     '''
     ********************************************************************
@@ -39,7 +40,10 @@ if __name__ == '__main__':
     db_name       = 'mnist'
     out_dir       = opt.out_dir
     data_source   = opt.data_source
-    
+    if opt.aux == 1:
+        aux = True
+    else:
+        aux = False
     '''
     1: To train model and compute FID after training
     0: To compute FID of pre-trained model
@@ -63,7 +67,7 @@ if __name__ == '__main__':
     '''
     network architecture supports: 'dcgan'
     '''
-    nnet_type = 'dcgan' # we only support small dcgan for mnist
+    nnet_type = 'metagan'
     '''
     objective loss type supports: 'log'
     '''
@@ -130,7 +134,7 @@ if __name__ == '__main__':
     
     if is_train == 1:
         # setup gan model and train
-        dcgan = DCGAN(model=model, \
+        dcgan = MetaGan(model=model, \
                                   is_train  = is_train,  \
                                   nb_test_real = nb_test_real,\
                                   nb_test_fake = nb_test_fake,\
