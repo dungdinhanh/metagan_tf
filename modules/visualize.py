@@ -25,6 +25,19 @@ def draw_2_log(sticks, values1, values2, name1, name2,title, path):
     plt.close()
 
 
+def draw_3_fid_log(sticks, values1, values2, values3, name1, name2, name3,title, path):
+    plt.plot(sticks, values1, label=name1, alpha=0.5)
+    plt.plot(sticks, values2, label=name2, alpha=0.6)
+    plt.plot(sticks, values3, label=name3, alpha=0.7)
+    plt.xlabel("iters")
+    plt.ylabel("fid")
+    plt.title(title)
+    plt.legend()
+    # plt.show()
+    plt.savefig(path)
+    plt.close()
+
+
 def read_log_file(dg_path: str, l_path: str):
     return read_log_file_dg(dg_path), read_log_file_l(l_path)
 
@@ -79,4 +92,23 @@ def extract_info_l(input_log_line):
     l_loss = float(list_features[9].split(",")[0])
     return step, l_loss
     pass
+
+def read_fid_file(input_log_file):
+    f = open(input_log_file, "r")
+    steps = []
+    fid_values = []
+    count = 0
+    for line in f:
+        step, fid =  extract_fid_line(line)
+        steps.append(step)
+        fid_values.append(fid)
+    return steps, fid_values
+    pass
+
+def extract_fid_line(fid_line):
+    list_features = fid_line.split()
+    # 1 is step, 4 is fid
+    step = int(list_features[1])
+    fid = float(list_features[4])
+    return step, fid
 

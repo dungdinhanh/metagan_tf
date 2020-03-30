@@ -572,7 +572,8 @@ class MetaGan(object):
     def checkpoint_train_history(self):
         list_iters = glob.glob(os.path.join(self.ckpt_dir, "*"))
         for iter in list_iters:
-            n_iter = int(iter)
+            n_iter = os.path.basename(iter)
+            n_iter = int(n_iter)
             self.checkpoint_train(n_iter)
         pass
 
