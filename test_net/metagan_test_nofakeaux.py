@@ -37,7 +37,8 @@ class MetaGan(object):
                  log_interval = 10,                     \
                  out_dir = './output/',                 \
                  verbose = True,
-                 psi=[10, 10]):
+                 psi=[10, 10],
+                 lamb_ent=0.2):
         """
         Initializing MS-Dist-GAN model
         """
@@ -60,6 +61,7 @@ class MetaGan(object):
         self.n_steps    = n_steps
         self.batch_size = self.dataset.mb_size()
         self.psi = psi
+        self.lamb_ent = lamb_ent
 
         if self.verbose == True:
             print('[metagan.py -- __init__] ' \
@@ -331,7 +333,7 @@ class MetaGan(object):
                                                                                              1e-20))
 
 
-                self.l_cost = self.l_real + self.cross_entropy_loss_real
+                self.l_cost = self.l_real + self.lamb_ent * self.cross_entropy_loss_real
 
 
 
