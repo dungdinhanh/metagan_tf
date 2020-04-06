@@ -15,7 +15,7 @@ DISCRIMINATOR_AUX = 'discriminator_aux'
 GENERATOR = 'generator'
 LABEL_GEN = 'labelgen'
 
-# this model will make the gradient of auxilary only affects Discriminator (no Generator)
+# this model will make the gradient of auxilary only affects Generator (Discriminator only updates auxtask for only real images)
 
 
 class MetaGan(object):
@@ -351,8 +351,9 @@ class MetaGan(object):
             if self.lambda_gp > 0.0:
                 self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux + self.lambda_gp * self.penalty
             else:
-                self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux
-                    
+                # self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux
+                self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake
+
             # Generator loss
             self.g_cost  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits, labels=tf.ones_like(self.d_fake_prim_logits)))
             if aux:
@@ -362,8 +363,10 @@ class MetaGan(object):
             # self.g_cost_gan  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim, labels=tf.ones_like(self.d_fake_prim)))
             self.g_cost_gan  = self.g_cost
 
-            # Label Generator loss:
+            # fake aux loss and Label generator loss :
             if aux:
+                self.fake_aux_cost = self.d_fake_aux + self.g_cost_aux
+                # label generator loss
                 self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l2,
                                                                                        labels=tf.ones_like(self.d_real_prim_logits)))
                 self.label_real_d_mean = tf.reduce_mean(self.label_real_d, axis=0)
@@ -420,7 +423,7 @@ class MetaGan(object):
             self.opt_d = self.create_optimizer(self.d_cost, self.vars_d, self.learning_rate, self.beta1, self.beta2)
 
             if aux:
-                self.opt_g_aux = self.create_optimizer(self.g_cost_aux, self.vars_d, self.learning_rate, self.beta1,
+                self.opt_g_aux = self.create_optimizer(self.fake_aux_cost, self.vars_g, self.learning_rate, self.beta1,
                                                        self.beta2)
                 self.opt_l = self.create_optimizer(self.l_cost, self.vars_l, self.learning_rate, self.beta1, self.beta2)
         
@@ -470,7 +473,7 @@ class MetaGan(object):
                        # compute losses for printing out
                        elapsed = int(time.time() - start)
                        
-                       loss_d, loss_g, loss_g_aux = sess.run([self.d_cost, self.g_cost, self.g_cost_aux], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                       loss_d, loss_g, loss_fake_aux = sess.run([self.d_cost, self.g_cost, self.fake_aux_cost], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
                        output_str = '[metagan.py -- train] '\
                                         + 'step: %d, '         % (step)   \
                                         + 'D loss: %f, '       % (loss_d) \
