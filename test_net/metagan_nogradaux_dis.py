@@ -351,8 +351,8 @@ class MetaGan(object):
             if self.lambda_gp > 0.0:
                 self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux + self.lambda_gp * self.penalty
             else:
-                # self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux
-                self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake
+                self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux
+                # self.d_cost_gan  = self.d_real + self.d_real_aux + self.d_fake
 
             # Generator loss
             self.g_cost  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits, labels=tf.ones_like(self.d_fake_prim_logits)))
@@ -361,11 +361,11 @@ class MetaGan(object):
             else:
                 self.g_cost_aux = tf.zeros_like(self.g_cost)
             # self.g_cost_gan  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim, labels=tf.ones_like(self.d_fake_prim)))
-            self.g_cost_gan  = self.g_cost
+            self.g_cost_gan  = self.g_cost + self.g_cost_aux + self.d_fake_aux
 
             # fake aux loss and Label generator loss :
             if aux:
-                self.fake_aux_cost = self.d_fake_aux + self.g_cost_aux
+                # self.fake_aux_cost = self.d_fake_aux + self.g_cost_aux
                 # label generator loss
                 self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l2,
                                                                                        labels=tf.ones_like(self.d_real_prim_logits)))
@@ -397,7 +397,7 @@ class MetaGan(object):
         else:
             print('\n[metagan.py -- create_model] %s is not supported.' % (self.loss_type))
                                             
-        self.d_cost = self.d_cost_gan    
+        self.d_cost = self.d_cost_gan  + self.g_cost_aux
         self.g_cost = self.g_cost_gan
             
         # Create optimizers
@@ -423,8 +423,6 @@ class MetaGan(object):
             self.opt_d = self.create_optimizer(self.d_cost, self.vars_d, self.learning_rate, self.beta1, self.beta2)
 
             if aux:
-                self.opt_g_aux = self.create_optimizer(self.fake_aux_cost, self.vars_g, self.learning_rate, self.beta1,
-                                                       self.beta2)
                 self.opt_l = self.create_optimizer(self.l_cost, self.vars_l, self.learning_rate, self.beta1, self.beta2)
         
         self.init = tf.global_variables_initializer()
@@ -473,7 +471,7 @@ class MetaGan(object):
                        # compute losses for printing out
                        elapsed = int(time.time() - start)
                        
-                       loss_d, loss_g, loss_fake_aux = sess.run([self.d_cost, self.g_cost, self.fake_aux_cost], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                       loss_d, loss_g = sess.run([self.d_cost, self.g_cost], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
                        output_str = '[metagan.py -- train] '\
                                         + 'step: %d, '         % (step)   \
                                         + 'D loss: %f, '       % (loss_d) \
