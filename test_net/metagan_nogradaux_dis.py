@@ -397,7 +397,7 @@ class MetaGan(object):
         else:
             print('\n[metagan.py -- create_model] %s is not supported.' % (self.loss_type))
                                             
-        self.d_cost = self.d_cost_gan    
+        self.d_cost = self.d_cost_gan  + self.g_cost_aux
         self.g_cost = self.g_cost_gan
             
         # Create optimizers
