@@ -6,7 +6,7 @@ import time
 from modules.imutils import *
 from modules.mdutils import *
 from modules.fiutils import mkdirs
-from modules.net_metagan  import  *
+from modules.net_metagan1  import  *
 
 from support.mnist_classifier import classify
 import glob
@@ -166,7 +166,7 @@ class MetaGan(object):
             
     def create_generator(self):
         if self.nnet_type == 'metagan' and self.db_name in ['mnist']:
-            return generator_dcgan_mnist            
+            return meta_generator_dcgan_mnist
         else:
             print('[metagan.py -- create_generator] The dataset %s are not supported by the network %s' %(self.db_name, self.nnet_type));
 
@@ -205,6 +205,7 @@ class MetaGan(object):
 
     def create_model(self, aux=True):
         # aux = False
+        self.weights_gen = construct_weights_generator(self.noise_dim, dim=self.gf_dim)
         self.X   = tf.placeholder(tf.float32, shape=[self.batch_size, self.data_dim])
         self.z   = tf.placeholder(tf.float32, shape=[self.batch_size, self.noise_dim])
         self.zn  = tf.placeholder(tf.float32, shape=[None, self.noise_dim]) # to generate flexible number of images
@@ -214,8 +215,8 @@ class MetaGan(object):
         # create generator
         with tf.variable_scope('generator'):
             self.G    = self.create_generator()
-            self.X_f  = self.G(self.z,   self.data_shape, dim = self.gf_dim, reuse=False)   # to generate fake samples
-            self.X_fn = self.G(self.zn,  self.data_shape, dim = self.gf_dim, reuse=True)    # to generate flexible number of fake images
+            self.X_f  = self.G(self.z,   self.data_shape, self.weights_gen, reuse=False)   # to generate fake samples
+            self.X_fn = self.G(self.zn,  self.data_shape, self.weights_gen, reuse=True)    # to generate flexible number of fake images
 
         # with tf.variable_scope('labelgen'):
         #     self.L = self.create_label_generator()
@@ -240,7 +241,7 @@ class MetaGan(object):
 
         # create discriminator
         with tf.variable_scope('discriminator'):
-            self.weights = construct_weights(self.df_dim, aux=aux)
+            self.weights = construct_weights_discriminator(self.df_dim, aux=aux)
             self.D = self.create_meta_discriminator()
             self.d_real_prim_logits,  self.d_real_aux_logits = self.D(self.X, self.data_shape, self.weights, reuse=False, aux=aux)
             self.d_fake_prim_logits,  self.d_fake_aux_logits = self.D(self.X_f, self.data_shape, self.weights, reuse=True, aux=aux)
