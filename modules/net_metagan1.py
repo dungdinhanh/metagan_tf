@@ -50,7 +50,6 @@ def generator_dcgan_mnist(z, x_shape, dim=64, kernel_size=5, stride=2, \
         return tf.sigmoid(y)
 
 
-
 def meta_generator_dcgan_mnist(z, x_shape, weights,
                                    stride=2,
                                    name='generator',
