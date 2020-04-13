@@ -205,7 +205,7 @@ class MetaGan(object):
 
     def create_model(self, aux=True):
         # aux = False
-        self.weights_gen = construct_weights_generator(self.noise_dim, dim=self.gf_dim)
+
         self.X   = tf.placeholder(tf.float32, shape=[self.batch_size, self.data_dim])
         self.z   = tf.placeholder(tf.float32, shape=[self.batch_size, self.noise_dim])
         self.zn  = tf.placeholder(tf.float32, shape=[None, self.noise_dim]) # to generate flexible number of images
@@ -214,6 +214,7 @@ class MetaGan(object):
                    
         # create generator
         with tf.variable_scope('generator'):
+            self.weights_gen = construct_weights_generator(self.noise_dim, dim=self.gf_dim)
             self.G    = self.create_generator()
             self.X_f  = self.G(self.z,   self.data_shape, self.weights_gen, reuse=False)   # to generate fake samples
             self.X_fn = self.G(self.zn,  self.data_shape, self.weights_gen, reuse=True)    # to generate flexible number of fake images
