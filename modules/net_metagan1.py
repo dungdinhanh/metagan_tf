@@ -59,20 +59,21 @@ def meta_generator_dcgan_mnist(z, x_shape, weights,
     n_stride = stride
     stride, no_stride = [1, n_stride, n_stride, 1], [1, 1, 1, 1]
     x_dim = x_shape[0] * x_shape[1] * x_shape[2]
+    batch = tf.shape(z)[0]
     with tf.variable_scope(name, reuse=reuse):
         y = tf.matmul(z, weights['w1']) + weights['b1']
         y = normalize(y, tf.nn.relu, reuse, 'bn1', is_training=training)
 
         y = tf.reshape(y, [-1, 4, 4, weights['dim'] * 4])
 
-        y = tf.nn.conv2d_transpose(y, weights['dconv2'], stride, 'SAME') + weights['b2']
-        y = tf.nn.relu(y)
+        y = tf.nn.conv2d_transpose(y, weights['dconv2'], [batch, 8, 8, weights['dim'] * 2],stride, 'SAME') + weights['b2']
+        y = normalize(y, tf.nn.relu, reuse, 'bn2', is_training=training)
 
         y = y[:, :7, :7, :]
-        y = tf.nn.conv2d_transpose(y, weights['dconv3'], stride, 'SAME') + weights['b3']
-        y = tf.nn.relu(y)
+        y = tf.nn.conv2d_transpose(y, weights['dconv3'], [batch, 14, 14, weights['dim']],stride, 'SAME') + weights['b3']
+        y = normalize(y, tf.nn.relu, reuse, 'bn3', is_training=training)
 
-        y = tf.nn.conv2d_transpose(y, weights['dconv4'], stride, 'SAME') + weights['b4']
+        y = tf.nn.conv2d_transpose(y, weights['dconv4'], [batch, 28, 28, weights['channel']],stride, 'SAME') + weights['b4']
         y = tf.reshape(y, [-1, x_dim])
 
         return tf.sigmoid(y)
@@ -82,22 +83,23 @@ def meta_generator_dcgan_mnist(z, x_shape, weights,
 def construct_weights_generator(z_size=100, dim=64, kernel_size=5, channel_size=1):
     weights={}
     weights['dim'] = dim
+    weights['channel'] = channel_size
     dtype = tf.float32
     conv_initializer = tf.contrib.layers.xavier_initializer_conv2d(dtype=dtype)
     fc_initializer = tf.contrib.layers.xavier_initializer(dtype=dtype)
     k=kernel_size
 
-    weights['w1'] = tf.get_variable('w1', [z_size, 4 * 4 * dim * 4], initializer=fc_initializer)
-    weights['b1'] = tf.get_variable('w2', [tf.zeros_like(4* 4 * dim * 4)])
+    weights['w1'] = tf.get_variable('w1', [z_size, 4 * 4 * dim * 4], initializer=fc_initializer, dtype=dtype)
+    weights['b1'] = tf.Variable(tf.zeros([4* 4 * dim * 4]))
 
-    weights['dconv2'] = tf.get_variable('dconv1', [k, k, dim * 4, dim * 2], initializer=conv_initializer, dtype=dtype)
-    weights['b1'] = tf.Variable(tf.zeros([dim]))
-
-    weights['dconv3'] = tf.get_variable('dconv2', [k, k, dim*2, dim], initializer=conv_initializer, dtype=dtype)
+    weights['dconv2'] = tf.get_variable('dconv2', [k, k, dim * 4, dim * 2], initializer=conv_initializer, dtype=dtype)
     weights['b2'] = tf.Variable(tf.zeros([dim*2]))
 
-    weights['dconv4'] = tf.get_variable('dconv3', [k, k, dim, channel_size], initializer=conv_initializer, dtype=dtype)
-    weights['b3'] = tf.Variable(tf.zeros([dim*4]))
+    weights['dconv3'] = tf.get_variable('dconv3', [k, k, dim*2, dim], initializer=conv_initializer, dtype=dtype)
+    weights['b3'] = tf.Variable(tf.zeros([dim]))
+
+    weights['dconv4'] = tf.get_variable('dconv4', [k, k, dim, channel_size], initializer=conv_initializer, dtype=dtype)
+    weights['b4'] = tf.Variable(tf.zeros([channel_size]))
 
     return weights
 
