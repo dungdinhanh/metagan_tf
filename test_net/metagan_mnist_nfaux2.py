@@ -545,8 +545,11 @@ class MetaGan(object):
                     # print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
 
     @staticmethod
-    def get_log_string_csv(image_id, np_array):
-        log_string = "%05d, " % image_id
+    def get_log_string_csv(image_id, image_label, real_percent, np_array, real_label=None):
+        if real_label is not None:
+            log_string = "%05d, %d, %d, %f," % (image_id, image_label, real_label, real_percent)
+        else:
+            log_string = "%05d, %d, %f," % (image_id, image_label, real_percent)
         for element in np_array:
             log_string += "%f, " % element
         log_string += "\n"

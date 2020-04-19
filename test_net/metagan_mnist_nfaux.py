@@ -578,7 +578,11 @@ class MetaGan(object):
         self.log_file_classification_label_real = os.path.join(real_dir, "label_generator.csv")
         f_real = open(self.log_file_classification_real, "w")
         f_label_real = open(self.log_file_classification_label_real, "w")
+        f_real.write("image id, guess label, real label, real_percent, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
+        f_real.flush()
 
+        f_label_real.write("image id, guess label, real label, real_percent, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
+        f_label_real.flush()
 
         im_fake_dir = os.path.join(real_test_dir, "fake")
         mkdirs(im_fake_dir)
