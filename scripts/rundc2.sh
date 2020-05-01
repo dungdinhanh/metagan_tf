@@ -17,3 +17,4 @@ python dcgan_mnist.py --model dcgan10 --n_steps 400000
 python dcgan_mnist.py --model dcgan10 --is_train 0 --n_steps 400000
 #python metagan_mnist.py --model metgan4
 #python metagan_mnist.py --model metagan4 --is_train 0
+

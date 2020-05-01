@@ -2,6 +2,7 @@ import os, sys
 import numpy as np
 import argparse
 from   dcgan import DCGAN
+from   test_net.metagan_nograd_gen import MetaGan
 from   modules.dataset import Dataset
 from   modules.eval import compute_fid_score_mnist
 from   modules.fiutils import mkdirs
@@ -24,12 +25,13 @@ if __name__ == '__main__':
     parser.add_argument('--noise_dim',    type=int,   default=100,             help='The dimension of latent noise')
     parser.add_argument('--batch_size',   type=int,   default=64,              help='Mini-batch size')
     parser.add_argument('--lambda_gp',    type=float, default=0.0,             help='The gradient penalty term')
+    parser.add_argument('--lambda_ent', type=float, default=0.2,           help="Lambda for entropy penalty")
     parser.add_argument('--percent',      type=float, default=100,             help='The percentage (%) of original dataset, i.e. default = 25%.')
     parser.add_argument('--real_dir',     type=str,   default="",              help='If the real samples are existing to compute FID, do not need to create new real ones')
-    parser.add_argument('--model', type=str, default="dcgan", help="model name")
+    parser.add_argument('--aux',           type=int, default=1,                 help='0 is for dcgan, 1 is for metagan')
+    parser.add_argument('--model', type=str, default="metagan", help="model name")
+        
     opt = parser.parse_args()
-
-    os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.gpu_id)
         
     '''
     ********************************************************************
@@ -39,7 +41,10 @@ if __name__ == '__main__':
     db_name       = 'mnist'
     out_dir       = opt.out_dir
     data_source   = opt.data_source
-    
+    if opt.aux == 1:
+        aux = True
+    else:
+        aux = False
     '''
     1: To train model and compute FID after training
     0: To compute FID of pre-trained model
@@ -63,7 +68,7 @@ if __name__ == '__main__':
     '''
     network architecture supports: 'dcgan'
     '''
-    nnet_type = 'dcgan' # we only support small dcgan for mnist
+    nnet_type = 'metagan'
     '''
     objective loss type supports: 'log'
     '''
@@ -84,13 +89,14 @@ if __name__ == '__main__':
     @gf_dim: feature map unit for generator.
     @lr: learning rate
     @beta1, beta2 parameters for Adam optimizer
+    @lambda_ent lambda entropy for entropy penalty avoiding mode collapse
     '''
     df_dim = 64
     gf_dim = 64
     lr     = 2e-4
     beta1  = 0.5
     beta2  = 0.9
-    
+    lambda_ent = opt.lambda_ent
     '''
     The weight of gradient penalty term (<= 0: without gradient penalty)
     '''
@@ -110,7 +116,8 @@ if __name__ == '__main__':
     ext_name = 'batch_size_%d_'    % (batch_size) + \
                'percent_%d_'       % (percent)    + \
                'n_steps_%d_'       % (n_steps)    + \
-               'lambda_gp_%.02f'   % (lambda_gp)
+               'lambda_gp_%.02f_'   % (lambda_gp) + \
+                'lambda_ent_%.02f'  % (lambda_ent)
         
     '''
     The ouput of the program
@@ -130,7 +137,7 @@ if __name__ == '__main__':
     
     if is_train == 1:
         # setup gan model and train
-        dcgan = DCGAN(model=model, \
+        dcgan = MetaGan(model=model, \
                                   is_train  = is_train,  \
                                   nb_test_real = nb_test_real,\
                                   nb_test_fake = nb_test_fake,\
@@ -146,7 +153,8 @@ if __name__ == '__main__':
                                   gf_dim = gf_dim,       \
                                   dataset=dataset,       \
                                   n_steps = n_steps,     \
-                                  out_dir=base_dir)
+                                  out_dir=base_dir,
+                                lamb_ent=lambda_ent)
         dcgan.train()
 
     elif is_train == 0:

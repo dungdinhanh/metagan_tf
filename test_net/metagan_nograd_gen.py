@@ -6,7 +6,7 @@ import time
 from modules.imutils import *
 from modules.mdutils import *
 from modules.fiutils import mkdirs
-from test_net.metagan_nofakeaux import *
+from modules.net_metagan  import  *
 
 from support.mnist_classifier import classify
 import glob
@@ -295,6 +295,42 @@ class MetaGan(object):
                                                                              reuse=True, name=DISCRIMINATOR,
                                                                              aux=aux)
 
+                # self.d_real_prim_logits_l, self.d_real_aux_logits_l = self.D(self.X ,self.data_shape, self.weights, reuse=False, name=DISCRIMINATOR,
+                #                                            aux=aux)
+                # self.d_fake_prim_logits_l, self.d_fake_aux_logits_l = self.D(self.X_f, self.data_shape, self.weights, reuse=True, name=DISCRIMINATOR,
+                #                                            aux=aux)
+                #
+                # self.d_real_l = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l,
+                #                                                                        labels=tf.ones_like(
+                #                                                                            self.d_real_prim_logits)))
+                #
+                # self.d_real_aux_l = tf.reduce_mean(
+                #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_aux_logits_l,
+                #                                             labels=self.label_real_d))
+                #
+                # self.d_fake_l = tf.reduce_mean(
+                #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits_l, labels=tf.zeros_like(
+                #         self.d_fake_prim_logits)))
+                # self.d_fake_aux_l = tf.reduce_mean(
+                #     tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits_l, labels=self.label_fake_d))
+                # if self.lambda_gp > 0.0:
+                #     self.d_cost_gan_l = self.d_real_l + self.d_real_aux_l + self.d_fake_l + self.d_fake_aux_l + self.lambda_gp * self.penalty
+                # else:
+                #     self.d_cost_gan_l = self.d_real_l + self.d_real_aux_l + self.d_fake_l + self.d_fake_aux_l
+                # grads = tf.gradients(self.d_cost_gan_l, list(self.weights.values()))
+                # gradients = dict(zip(self.weights.keys(), grads))
+                # fast_weights = dict(
+                #     zip(self.weights.keys(), [self.weights[key] - self.learning_rate * gradients[key] for key in self.weights.keys()]))
+                # self.d_real_prim_logits_l2, self.d_real_aux_logits_l2 = self.D(self.X, self.data_shape, fast_weights,
+                #                                                              reuse=False, name=DISCRIMINATOR,
+                #                                                              aux=aux)
+                # self.d_fake_prim_logits_l2, self.d_fake_aux_logits_l2 = self.D(self.X_f, self.data_shape, fast_weights,
+                #                                                              reuse=True, name=DISCRIMINATOR,
+                #                                                              aux=aux)
+
+
+
+                
         # Original losses with log function
         if self.loss_type == 'log':
             # Discriminator Loss
@@ -305,7 +341,7 @@ class MetaGan(object):
                 self.d_real_aux = tf.zeros_like(self.d_real)
 
             self.d_fake   = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits, labels=tf.zeros_like(self.d_fake_prim_logits)))
-            if 1 != 1:
+            if aux:
                 self.d_fake_aux   = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits, labels=self.label_fake_d))
             else:
                 self.d_fake_aux = tf.zeros_like(self.d_fake)
@@ -317,12 +353,12 @@ class MetaGan(object):
                     
             # Generator loss
             self.g_cost  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits, labels=tf.ones_like(self.d_fake_prim_logits)))
-            if 1 != 1:
+            if aux:
                 self.g_cost_aux  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits, labels=self.label_real_g))
             else:
                 self.g_cost_aux = tf.zeros_like(self.g_cost)
             # self.g_cost_gan  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim, labels=tf.ones_like(self.d_fake_prim)))
-            self.g_cost_gan  = self.g_cost + self.g_cost_aux
+            self.g_cost_gan  = self.g_cost
 
             # Label Generator loss:
             if aux:
@@ -333,9 +369,24 @@ class MetaGan(object):
                                                                                              1e-20))
 
 
-                self.l_cost = self.l_real + self.lamb_ent * self.cross_entropy_loss_real
+                self.l_fake = tf.reduce_mean(
+                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits_l2, labels=tf.zeros_like(
+                        self.d_fake_prim_logits)))
+                self.label_fake_d_mean = tf.reduce_mean(self.label_fake_d, axis=0)
+                self.cross_entropy_loss_fake = tf.reduce_sum(self.label_fake_d_mean * tf.log(self.label_fake_d_mean
+                                                                                             + 1e-20))
 
 
+                self.l_gen = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+                    logits=self.d_fake_prim_logits_l2, labels=tf.ones_like(
+                        self.d_fake_prim_logits)))
+                self.label_real_g_mean = tf.reduce_mean(self.label_real_g, axis=0)
+                self.cross_entropy_loss_gen = tf.reduce_sum(self.label_real_g_mean * tf.log(self.label_real_g_mean
+                                                                                            + 1e-20))
+
+
+                self.l_cost = self.l_real + self.l_fake + self.l_gen + self.lamb_ent * self.cross_entropy_loss_real + \
+                              self.lamb_ent * self.cross_entropy_loss_fake + self.lamb_ent * self.cross_entropy_loss_gen
 
 
         else:
@@ -365,7 +416,10 @@ class MetaGan(object):
 
             self.opt_g = self.create_optimizer(self.g_cost, self.vars_g, self.learning_rate, self.beta1, self.beta2)
             self.opt_d = self.create_optimizer(self.d_cost, self.vars_d, self.learning_rate, self.beta1, self.beta2)
+
             if aux:
+                self.opt_g_aux = self.create_optimizer(self.g_cost_aux, self.vars_d, self.learning_rate, self.beta1,
+                                                       self.beta2)
                 self.opt_l = self.create_optimizer(self.l_cost, self.vars_l, self.learning_rate, self.beta1, self.beta2)
         
         self.init = tf.global_variables_initializer()
@@ -414,7 +468,7 @@ class MetaGan(object):
                        # compute losses for printing out
                        elapsed = int(time.time() - start)
                        
-                       loss_d, loss_g = sess.run([self.d_cost, self.g_cost], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                       loss_d, loss_g, loss_g_aux = sess.run([self.d_cost, self.g_cost, self.g_cost_aux], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
                        output_str = '[metagan.py -- train] '\
                                         + 'step: %d, '         % (step)   \
                                         + 'D loss: %f, '       % (loss_d) \
@@ -481,35 +535,35 @@ class MetaGan(object):
                                     #     chosen_labels = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                                     # else:
                                     #     chosen_labels = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                                    # chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                                    chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                                     chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                                    # image_label_real = np.argmax(chosen_labels_real)
+                                    image_label_real = np.argmax(chosen_labels_real)
                                     image_label_fake = np.argmax(chosen_labels_fake)
                                     # image_label = np.argmax(chosen_labels)
                                     # if is_real:
                                     #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
                                     # else:
                                     #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
-                                    # label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                                    label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
                                     label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
-                                    # mkdirs(label_folder_pos)
+                                    mkdirs(label_folder_pos)
                                     mkdirs(label_folder_neg)
                                     # mkdirs(label_folder)
                                     # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
-                                    # fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
-                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]),
-                                    #     float(chosen_labels_real[image_label_real]))
+                                    fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                        float(chosen_labels_real[image_label_real]))
                                     fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]),
                                         float(chosen_labels_fake[image_label_fake]))
                                     fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                                    # log_string_real = self.get_log_string_csv(
-                                    #     np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                                    log_string_real = self.get_log_string_csv(
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                                     log_string_fake = self.get_log_string_csv(
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_fake)
-                                    # f_real.write(log_string_real)
-                                    # f_real.flush()
+                                    f_real.write(log_string_real)
+                                    f_real.flush()
 
                                     f_fake.write(log_string_fake)
                                     f_fake.flush()
@@ -521,7 +575,7 @@ class MetaGan(object):
                                     # fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                     #     np.min([v * self.batch_size + ii, self.nb_test_fake]))
                                     # imwrite(im_fake_save[ii,:,:,:], fake_path)
-                                    # imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
+                                    imwrite(im_fake_save[ii, :, :, :], fake_path_pos)
                                     imwrite(im_fake_save[ii, :, :, :], fake_path_neg)
                                     imwrite(im_fake_save[ii, :, :, :], fake_path2)
                                     count = count + 1
@@ -648,12 +702,12 @@ class MetaGan(object):
                                                   feed_dict={self.X: im_real_save})
                 label_real_d = sess.run([self.label_real_d], feed_dict={self.X:im_real_save})
 
-                # label_real_d_fake = sess.run([self.label_real_d_fake], feed_dict={self.X:im_real_save})
+                label_real_d_fake = sess.run([self.label_real_d_fake], feed_dict={self.X:im_real_save})
 
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
                 label_real_d = np.asarray(label_real_d)[0]
-                # label_real_d_fake = np.asarray(label_real_d_fake)[0]
+                label_real_d_fake = np.asarray(label_real_d_fake)[0]
                 im_real_save = np.reshape(im_real_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
@@ -666,11 +720,11 @@ class MetaGan(object):
 
                 for ii in range(np.shape(mb_X)[0]):
                     if count < self.nb_test_fake:
-                        # chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                        chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
                         label_gen_pos = label_real_d[ii]
-                        # label_gen_neg = label_real_d_fake[ii]
-                        # image_label_real = np.argmax(chosen_labels_real)
+                        label_gen_neg = label_real_d_fake[ii]
+                        image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
                         real_label = mb_l[ii]
@@ -688,24 +742,24 @@ class MetaGan(object):
                         #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
                         # else:
                         #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
-                        # label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                        label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
                         label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
-                        # mkdirs(label_folder_pos)
+                        mkdirs(label_folder_pos)
                         mkdirs(label_folder_neg)
                         # mkdirs(label_folder)
                         # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
-                        # fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
-                        #     np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
+                        fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
                         fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_fake[image_label_fake]))
                         fake_path2 = fake_dir + '/image_%05d.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                        # log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_fake)
                         log_string_label_pos = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_pos)
-                        # log_string_label_neg = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_neg)
-                        # f_real.write(log_string_real)
-                        # f_real.flush()
+                        log_string_label_neg = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_neg)
+                        f_real.write(log_string_real)
+                        f_real.flush()
 
                         f_fake.write(log_string_fake)
                         f_fake.flush()
@@ -713,10 +767,10 @@ class MetaGan(object):
                         f_label_pos.write(log_string_label_pos)
                         f_label_pos.flush()
 
-                        # f_label_neg.write(log_string_label_neg)
-                        # f_label_neg.flush()
+                        f_label_neg.write(log_string_label_neg)
+                        f_label_neg.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
-                        # imwrite(im_real_save[ii, :, :, :], fake_path_pos)
+                        imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
                         # imwrite(im_real_save[ii, :, :, :], fake_path2)
                         count = count + 1
@@ -729,14 +783,14 @@ class MetaGan(object):
                 im_fake_save = sess.run(self.X_f, feed_dict={self.z: mb_z})
                 real_fake, label_guess = sess.run([self.get_d_fake_prim_sig, self.get_d_fake_aux_sig],
                                                   feed_dict={self.X_f: im_fake_save})
-                # label_fake_d = sess.run([self.label_fake_d], feed_dict={self.X_f: im_fake_save})
+                label_fake_d = sess.run([self.label_fake_d], feed_dict={self.X_f: im_fake_save})
                 label_real_g = sess.run([self.label_real_g], feed_dict={self.X_f: im_fake_save})
 
                 real_fake = np.asarray(real_fake)
                 label_guess = np.asarray(label_guess)
                 im_real_save = np.reshape(im_fake_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
-                # label_fake_d = np.asarray(label_fake_d)[0]
+                label_fake_d = np.asarray(label_fake_d)[0]
                 label_real_g = np.asarray(label_real_g)[0]
 
                 # fake_dir = self.out_dir + '/real_test_discriminator_%d/' % (iter)
@@ -749,11 +803,11 @@ class MetaGan(object):
 
                 for ii in range(np.shape(im_fake_save)[0]):
                     if count < self.nb_test_fake:
-                        # chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
+                        chosen_labels_real = label_guess[ii, 1 * self.psi[1]: self.psi[1] + self.psi[1]]
                         chosen_labels_fake = label_guess[ii, 0 * self.psi[0]: 0 * self.psi[0] + self.psi[0]]
-                        # label_gen_neg = label_fake_d[ii]
+                        label_gen_neg = label_fake_d[ii]
                         label_gen_pos = label_real_g[ii]
-                        # image_label_real = np.argmax(chosen_labels_real)
+                        image_label_real = np.argmax(chosen_labels_real)
                         image_label_fake = np.argmax(chosen_labels_fake)
 
 
@@ -767,24 +821,24 @@ class MetaGan(object):
                         #     label_folder = fake_dir_pos + "/class_%d/"%(int(image_label))
                         # else:
                         #     label_folder = fake_dir_neg + "/class_%d/"%(int(image_label))
-                        # label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
+                        label_folder_pos = fake_dir_pos + "/class_%d" % (int(image_label_real))
                         label_folder_neg = fake_dir_neg + "/class_%d" % (int(image_label_fake))
-                        # mkdirs(label_folder_pos)
+                        mkdirs(label_folder_pos)
                         mkdirs(label_folder_neg)
                         # mkdirs(label_folder)
                         # fake_path = label_folder + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
-                        # fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
-                            # np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
+                        fake_path_pos = label_folder_pos + '/image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_real[image_label_real]))
                         fake_path_neg = label_folder_neg + '/image_%05d_confidence%f.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]), float(chosen_labels_fake[image_label_fake]))
                         fake_path2 = im_fake_dir + '/image_%05d.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]))
-                        # log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
+                        log_string_real = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_real)
                         log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels_fake)
                         log_string_label_pos = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_pos)
-                        # log_string_label_neg = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_neg)
-                        # f_real_imf.write(log_string_real)
-                        # f_real_imf.flush()
+                        log_string_label_neg = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]), label_gen_neg)
+                        f_real_imf.write(log_string_real)
+                        f_real_imf.flush()
 
                         f_fake_imf.write(log_string_fake)
                         f_fake_imf.flush()
@@ -792,10 +846,10 @@ class MetaGan(object):
                         f_label_pos_imf.write(log_string_label_pos)
                         f_label_pos_imf.flush()
 
-                        # f_label_neg_imf.write(log_string_label_neg)
-                        # f_label_neg_imf.flush()
+                        f_label_neg_imf.write(log_string_label_neg)
+                        f_label_neg_imf.flush()
                         # imwrite(im_fake_save[ii,:,:,:], fake_path)
-                        # imwrite(im_real_save[ii, :, :, :], fake_path_pos)
+                        imwrite(im_real_save[ii, :, :, :], fake_path_pos)
                         imwrite(im_real_save[ii, :, :, :], fake_path_neg)
                         # imwrite(im_real_save[ii, :, :, :], fake_path2)
                         count = count + 1

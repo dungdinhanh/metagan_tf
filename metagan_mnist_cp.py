@@ -25,6 +25,7 @@ if __name__ == '__main__':
     parser.add_argument('--noise_dim', type=int, default=100, help='The dimension of latent noise')
     parser.add_argument('--batch_size', type=int, default=64, help='Mini-batch size')
     parser.add_argument('--lambda_gp', type=float, default=0.0, help='The gradient penalty term')
+    parser.add_argument('--lambda_ent', type=float, default=0.2, help="Lambda for entropy penalty")
     parser.add_argument('--percent', type=float, default=100,
                         help='The percentage (%) of original dataset, i.e. default = 25%.')
     parser.add_argument('--real_dir', type=str, default="",
@@ -89,13 +90,14 @@ if __name__ == '__main__':
     @gf_dim: feature map unit for generator.
     @lr: learning rate
     @beta1, beta2 parameters for Adam optimizer
+    @lambda_ent lambda entropy for entropy penalty avoiding mode collapse
     '''
     df_dim = 64
     gf_dim = 64
     lr = 2e-4
     beta1 = 0.5
     beta2 = 0.9
-
+    lambda_ent = opt.lambda_ent
     '''
     The weight of gradient penalty term (<= 0: without gradient penalty)
     '''
@@ -115,7 +117,8 @@ if __name__ == '__main__':
     ext_name = 'batch_size_%d_' % (batch_size) + \
                'percent_%d_' % (percent) + \
                'n_steps_%d_' % (n_steps) + \
-               'lambda_gp_%.02f' % (lambda_gp)
+               'lambda_gp_%.02f_' % (lambda_gp) + \
+               'lambda_ent_%.02f' % (lambda_ent)
 
     '''
     The ouput of the program
@@ -151,7 +154,8 @@ if __name__ == '__main__':
                         gf_dim=gf_dim, \
                         dataset=dataset, \
                         n_steps=n_steps, \
-                        out_dir=base_dir)
+                        out_dir=base_dir,
+                        lamb_ent=lambda_ent)
         dcgan.checkpoint_train_history()
 
     elif is_train == 0:
@@ -163,24 +167,3 @@ if __name__ == '__main__':
                                 nb_train=nb_test_real, \
                                 nb_test=nb_test_fake, \
                                 niters=n_steps)
-
-    elif is_train == 2:
-        # compute fid score
-        dcgan = MetaGan(model=model, \
-                        is_train=is_train, \
-                        nb_test_real=nb_test_real, \
-                        nb_test_fake=nb_test_fake, \
-                        real_dir=real_dir, \
-                        loss_type=loss_type, \
-                        lambda_gp=lambda_gp, \
-                        noise_dim=noise_dim, \
-                        lr=lr, \
-                        beta1=beta1, \
-                        beta2=beta2, \
-                        nnet_type=nnet_type, \
-                        df_dim=df_dim, \
-                        gf_dim=gf_dim, \
-                        dataset=dataset, \
-                        n_steps=n_steps, \
-                        out_dir=base_dir)
-        dcgan.checkpoint_train(300000)
