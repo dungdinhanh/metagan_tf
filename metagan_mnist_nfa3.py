@@ -32,7 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default="metagan", help="model name")
         
     opt = parser.parse_args()
-        
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu_id
     '''
     ********************************************************************
     * Database and outputs
