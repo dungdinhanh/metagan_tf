@@ -15,7 +15,7 @@ if __name__ == '__main__':
     ********************************************************************
     ''' 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu_id',       type=str,   default=0,               help='The ID of the specified GPU')
+    parser.add_argument('--gpu_id',       type=str,   default="0",               help='The ID of the specified GPU')
     parser.add_argument('--is_train',     type=int,   default=1,               help='1: Training, 2: Computing FID')
     parser.add_argument('--out_dir',      type=str,   default="./output/",     help='The ouput folder')
     parser.add_argument('--data_source',  type=str,   default="./data/mnist/", help='The place of storing MNIST dataset.')
