@@ -16,10 +16,11 @@ DISCRIMINATOR_AUX = 'discriminator_aux'
 GENERATOR = 'generator'
 LABEL_GEN = 'labelgen'
 
-
 # Only 10 labels for auxiliary tasks
-# training for fake samples in label generator
-# g_cost = d_prim (pos)
+# No training for fake samples in label generator
+# g_cost = d_prim + d_fake_aux
+# Training label generator by  label of real data
+# Supervised label generator
 
 class MetaGan(object):
 
@@ -161,7 +162,7 @@ class MetaGan(object):
             return discriminator_dcgan_mnist
         else:
             print('[metagan.py -- create_discriminator] The dataset %s are not supported by the network %s' % (
-            self.db_name, self.nnet_type));
+            self.db_name, self.nnet_type))
 
     def create_meta_discriminator(self):
         if self.nnet_type == 'metagan' and self.db_name in ['mnist']:
@@ -175,14 +176,14 @@ class MetaGan(object):
             return generator_dcgan_mnist
         else:
             print('[metagan.py -- create_generator] The dataset %s are not supported by the network %s' % (
-            self.db_name, self.nnet_type));
+            self.db_name, self.nnet_type))
 
     def create_label_generator(self):
         if self.nnet_type == "metagan" and self.db_name in ['mnist']:
             return label_gen_dcgan_mnist
         else:
             print('[metagan.py -- create_label_generator] The dataset %s are not supported by the network %s' % (
-            self.db_name, self.nnet_type));
+            self.db_name, self.nnet_type))
 
     def create_optimizer(self, loss, var_list, learning_rate, beta1, beta2):
         """Create the optimizer operation.
@@ -214,10 +215,9 @@ class MetaGan(object):
     def create_model(self, aux=True):
         # aux = False
         self.X = tf.placeholder(tf.float32, shape=[self.batch_size, self.data_dim])
-
         self.z = tf.placeholder(tf.float32, shape=[self.batch_size, self.noise_dim])
         self.zn = tf.placeholder(tf.float32, shape=[None, self.noise_dim])  # to generate flexible number of images
-
+        self.Y = tf.placeholder(tf.float32, shape=[self.batch_size, self.psi])
         self.iteration = tf.placeholder(tf.int32, shape=None)
 
         # create generator
@@ -227,21 +227,14 @@ class MetaGan(object):
             self.X_fn = self.G(self.zn, self.data_shape, dim=self.gf_dim,
                                reuse=True)  # to generate flexible number of fake images
 
-        # with tf.variable_scope('labelgen'):
-        #     self.L = self.create_label_generator()
-        #     self.label_real_d = self.L(self.X, self.data_shape, tf.ones_like(self.d_real_prim), dim=self.df_dim, reuse=False, psi=self.psi)
-        #     self.label_fake_d = self.L(self.X_f, self.data_shape, tf.zeros_like(self.d_real_prim), dim=self.df_dim, reuse=False, psi=self.psi)
-        #     self.label_real_g = self.L(self.X_f, self.data_shape, tf.ones_like(self.d_real_prim), dim=self.df_dim, reuse=False, psi=self.psi)
-        # create label generator
-        if aux:
-            with tf.variable_scope('labelgen'):
-                self.L = self.create_label_generator()
-                self.label_real_d = self.L(self.X, self.data_shape,
-                                           dim=self.df_dim,
-                                           reuse=False, psi=self.psi)
-                self.label_fake_d = self.L(self.X_f, self.data_shape,
-                                           dim=self.df_dim,
-                                           reuse=True, psi=self.psi)
+        with tf.variable_scope('labelgen'):
+            self.L = self.create_label_generator()
+            self.label_real_d = self.L(self.X, self.data_shape,
+                                       dim=self.df_dim,
+                                       reuse=False, psi=self.psi)
+            self.label_fake_d = self.L(self.X_f, self.data_shape,
+                                       dim=self.df_dim,
+                                       reuse=True, psi=self.psi)
 
 
         # create discriminator
@@ -258,8 +251,6 @@ class MetaGan(object):
 
             self.get_d_real_prim_sig = tf.nn.sigmoid(self.d_real_prim_logits)
             self.get_d_real_aux_sig = self.d_real_aux_logits
-            # self.get_d_real = (self.d_real_prim_logits, self.d_real_aux_logits)
-            # only compute gradient penalty for discriminator loss when: lambda_gp > 0 to speed up the program
             if self.lambda_gp > 0.0:
                 epsilon = tf.random_uniform(shape=[tf.shape(self.X)[0], 1], minval=0., maxval=1.)
                 interpolation = epsilon * self.X + (1 - epsilon) * self.X_f
@@ -268,64 +259,23 @@ class MetaGan(object):
                 slopes = tf.sqrt(tf.reduce_mean(tf.square(gradients), reduction_indices=[1]))
                 self.penalty = tf.reduce_mean((slopes - 1) ** 2)
 
-            if aux:
-                # auxiliary disriminator for training label generator
-                self.d_real_prim_logits_l, self.d_real_aux_logits_l = self.D(self.X, self.data_shape, self.weights,
-                                                                             reuse=True, name=DISCRIMINATOR,
-                                                                             aux=aux)
-                self.d_fake_prim_logits_l, self.d_fake_aux_logits_l = self.D(self.X_f, self.data_shape, self.weights,
-                                                                             reuse=True, name=DISCRIMINATOR,
-                                                                             aux=aux)
-
-                self.d_real_l = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l,
-                                                                                       labels=tf.ones_like(
-                                                                                           self.d_real_prim_logits)))
-
-                self.d_real_aux_l = tf.reduce_mean(
-                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_aux_logits_l,
-                                                            labels=self.label_real_d))
-
-                self.d_fake_l = tf.reduce_mean(
-                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits_l, labels=tf.zeros_like(
-                        self.d_fake_prim_logits)))
-                self.d_fake_aux_l = tf.reduce_mean(
-                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits_l, labels=self.label_fake_d))
-                if self.lambda_gp > 0.0:
-                    self.d_cost_gan_l = self.d_real_l + self.d_real_aux_l + self.d_fake_l + self.d_fake_aux_l + self.lambda_gp * self.penalty
-                else:
-                    self.d_cost_gan_l = self.d_real_l + self.d_real_aux_l + self.d_fake_l + self.d_fake_aux_l
-                grads = tf.gradients(self.d_cost_gan_l, list(self.weights.values()))
-                gradients = dict(zip(self.weights.keys(), grads))
-                fast_weights = dict(
-                    zip(self.weights.keys(),
-                        [self.weights[key] - self.lr_sd * gradients[key] for key in self.weights.keys()]))
-                self.d_real_prim_logits_l2, self.d_real_aux_logits_l2 = self.D(self.X, self.data_shape, fast_weights,
-                                                                               reuse=True, name=DISCRIMINATOR,
-                                                                               aux=aux)
-                self.d_fake_prim_logits_l2, self.d_fake_aux_logits_l2 = self.D(self.X_f, self.data_shape, fast_weights,
-                                                                               reuse=True, name=DISCRIMINATOR,
-                                                                               aux=aux)
 
         # Original losses with log function
         if self.loss_type == 'log':
             # Discriminator Loss
-            self.d_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits,
+            self.d_real = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits,
                                                                                  labels=tf.ones_like(
                                                                                      self.d_real_prim_logits)))
-            if aux:
-                self.d_real_aux = tf.reduce_mean(
-                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_aux_logits, labels=self.label_real_d))
-            else:
-                self.d_real_aux = tf.zeros_like(self.d_real)
+            self.d_real_aux = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_aux_logits, labels=self.label_real_d))
 
-            self.d_fake = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits,
+            self.d_fake = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits,
                                                                                  labels=tf.zeros_like(
                                                                                      self.d_fake_prim_logits)))
-            if aux:
-                self.d_fake_aux = tf.reduce_mean(
-                    tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits, labels=self.label_fake_d))
-            else:
-                self.d_fake_aux = tf.zeros_like(self.d_fake)
+            self.d_fake_aux = tf.reduce_mean(
+                tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_aux_logits, labels=self.label_fake_d))
 
             if self.lambda_gp > 0.0:
                 self.d_cost_gan = self.d_real + self.d_real_aux + self.d_fake + self.d_fake_aux + self.lambda_gp * self.penalty
@@ -336,21 +286,11 @@ class MetaGan(object):
             self.g_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits,
                                                                                  labels=tf.ones_like(
                                                                                      self.d_fake_prim_logits)))
-
-            self.g_cost_aux = tf.zeros_like(self.g_cost)
-            # self.g_cost_gan  = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim, labels=tf.ones_like(self.d_fake_prim)))
-            self.g_cost_gan = self.g_cost + self.g_cost_aux
+            self.g_cost_gan = self.g_cost + self.d_fake_aux
 
             # Label Generator loss:
-            if aux:
-                self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l2,
-                                                                                     labels=tf.ones_like(
-                                                                                         self.d_real_prim_logits)))
-                self.label_real_d_mean = tf.reduce_mean(self.label_real_d, axis=0)
-                self.cross_entropy_loss_real = tf.reduce_sum(self.label_real_d_mean * tf.log(self.label_real_d_mean +
-                                                                                             1e-20))
-
-                self.l_cost = self.l_real + self.lamb_ent * self.cross_entropy_loss_real
+            self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.label_real_d, labels=self.Y))
+            self.l_cost = self.l_real
 
 
 
@@ -383,8 +323,7 @@ class MetaGan(object):
 
             self.opt_g = self.create_optimizer(self.g_cost, self.vars_g, self.learning_rate, self.beta1, self.beta2)
             self.opt_d = self.create_optimizer(self.d_cost, self.vars_d, self.learning_rate, self.beta1, self.beta2)
-            if aux:
-                self.opt_l = self.create_optimizer(self.l_cost, self.vars_l, self.learning_rate, self.beta1, self.beta2)
+            self.opt_l = self.create_optimizer(self.l_cost, self.vars_l, self.learning_rate, self.beta1, self.beta2)
 
         self.init = tf.global_variables_initializer()
 
@@ -392,6 +331,7 @@ class MetaGan(object):
         """
         Training the model
         """
+        # aux = False
         run_config = tf.ConfigProto()
         run_config.gpu_options.allow_growth = True
 
@@ -402,7 +342,10 @@ class MetaGan(object):
         # saver = tf.train.Saver(var_list = self.vars_g_save + self.vars_d_save, max_to_keep=1)
         saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=20)
         step1 = 0
+
+        log_file_classification_real = self.out_dir + "_positive.csv"
         log_file_classification_fake = self.out_dir + "_negative.csv"
+        f_real = open(log_file_classification_real, "w")
         f_fake = open(log_file_classification_fake, "w")
 
         with tf.Session(config=run_config) as sess:
@@ -508,12 +451,16 @@ class MetaGan(object):
                                     imwrite(im_fake_save[ii, :, :, :], fake_path2)
                                     count = count + 1
 
+
                 if step % 170 == 0:
                     print("Training Label generator")
                     for i in range(170):
-                        mb_X = self.dataset.next_batch()
+                        mb_X, mb_l = self.dataset.next_batch_with_labels()
                         mb_z = self.sample_z(np.shape(mb_X)[0])
-                        sess.run([self.opt_l], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                        mb_Y = np.zeros_like([np.shape(mb_l)[0], self.psi])
+                        mb_Y[np.arange(np.shape(mb_l)[0]), mb_l] =1
+
+                        sess.run([self.opt_l], feed_dict={self.X: mb_X, self.Y: mb_Y,self.z: mb_z, self.iteration: step})
 
                         if step1 % self.log_interval == 0:
                             if self.verbose:
@@ -539,6 +486,7 @@ class MetaGan(object):
                         os.makedirs(self.ckpt_dir + '%d/' % (step))
                     save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step, step), global_step=step)
                     print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
+                    # print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
 
     @staticmethod
     def get_log_string_csv(image_id, image_label, real_percent, np_array, real_label=None):
@@ -579,11 +527,7 @@ class MetaGan(object):
         self.log_file_classification_label_real = os.path.join(real_dir, "label_generator.csv")
         f_real = open(self.log_file_classification_real, "w")
         f_label_real = open(self.log_file_classification_label_real, "w")
-        f_real.write("image id, guess label, real label, real_percent, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
-        f_real.flush()
 
-        f_label_real.write("image id, guess label, real label, real_percent, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10")
-        f_label_real.flush()
 
         im_fake_dir = os.path.join(real_test_dir, "fake")
         mkdirs(im_fake_dir)
@@ -697,4 +641,3 @@ class MetaGan(object):
 
                         imwrite(im_real_save[ii, :, :, :], fake_path_image)
                         count = count + 1
-
