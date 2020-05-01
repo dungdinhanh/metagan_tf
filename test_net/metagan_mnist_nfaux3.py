@@ -458,9 +458,8 @@ class MetaGan(object):
                     for i in range(170):
                         mb_X, mb_l = self.dataset.next_batch_with_labels()
                         mb_z = self.sample_z(np.shape(mb_X)[0])
-                        print(np.shape(mb_l))
                         mb_Y = np.zeros_like([np.shape(mb_l)[0], self.psi])
-                        mb_Y[np.arange(np.shape(mb_l)[0]), mb_l] =1
+                        mb_Y[np.arange(np.shape(mb_l)[0]), mb_l[:,0]] =1
 
                         sess.run([self.opt_l], feed_dict={self.X: mb_X, self.Y: mb_Y,self.z: mb_z, self.iteration: step})
 
