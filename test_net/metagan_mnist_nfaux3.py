@@ -444,7 +444,8 @@ class MetaGan(object):
                                     fake_path2 = fake_dir + '/image_%05d.jpg' % (
                                         np.min([v * self.batch_size + ii, self.nb_test_fake]))
                                     log_string_fake = self.get_log_string_csv(
-                                        np.min([v * self.batch_size + ii, self.nb_test_fake]), chosen_labels)
+                                        np.min([v * self.batch_size + ii, self.nb_test_fake]), image_label,
+                                        real_percent * 100, chosen_labels)
                                     f_fake.write(log_string_fake)
                                     f_fake.flush()
                                     imwrite(im_fake_save[ii, :, :, :], fake_path)
