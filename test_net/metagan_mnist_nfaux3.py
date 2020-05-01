@@ -471,7 +471,7 @@ class MetaGan(object):
                                 # loss_d, loss_g = sess.run([self.d_cost, self.g_cost],
                                 #                           feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
                                 loss_l = sess.run(self.l_cost,
-                                                  feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+                                                  feed_dict={self.X: mb_X, self.Y: mb_Y, self.z: mb_z, self.iteration: step})
                                 output_str = '[metagan.py -- train label generator] ' \
                                              + 'step: %d, ' % (step1) \
                                              + 'L loss: %f, ' % (loss_l) \
