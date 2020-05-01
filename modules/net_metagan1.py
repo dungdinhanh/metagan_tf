@@ -32,6 +32,7 @@ def encoder_dcgan_mnist(img, x_shape, z_dim=100, dim=64, \
 def generator_dcgan_mnist(z, x_shape, dim=64, kernel_size=5, stride=2, \
                           name = 'generator', \
                           reuse=True, training=True):
+                           
     bn = partial(batch_norm, is_training=training)
     dconv_bn_relu = partial(dconv, normalizer_fn=bn, \
                             activation_fn=relu, biases_initializer=None)
@@ -47,6 +48,61 @@ def generator_dcgan_mnist(z, x_shape, dim=64, kernel_size=5, stride=2, \
         y = dconv(y, x_shape[2], kernel_size, stride)      #28 x 28 x 3
         y = tf.reshape(y, [-1, x_dim])
         return tf.sigmoid(y)
+
+
+def meta_generator_dcgan_mnist(z, x_shape, weights,
+                                   stride=2,
+                                   name='generator',
+                                   reuse=True, training=True, aux=True):
+    # y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+    n_stride = stride
+    stride, no_stride = [1, n_stride, n_stride, 1], [1, 1, 1, 1]
+    x_dim = x_shape[0] * x_shape[1] * x_shape[2]
+    batch = tf.shape(z)[0]
+    with tf.variable_scope(name, reuse=reuse):
+        y = tf.matmul(z, weights['w1']) + weights['b1']
+        y = normalize(y, tf.nn.relu, reuse, 'bn1', is_training=training)
+
+        y = tf.reshape(y, [-1, 4, 4, weights['dim'] * 4])
+
+        y = tf.nn.conv2d_transpose(y, weights['dconv2'], [batch, 8, 8, weights['dim'] * 2],stride, 'SAME') + weights['b2']
+        y = normalize(y, tf.nn.relu, reuse, 'bn2', is_training=training)
+
+        y = y[:, :7, :7, :]
+        y = tf.nn.conv2d_transpose(y, weights['dconv3'], [batch, 14, 14, weights['dim']],stride, 'SAME') + weights['b3']
+        y = normalize(y, tf.nn.relu, reuse, 'bn3', is_training=training)
+
+        y = tf.nn.conv2d_transpose(y, weights['dconv4'], [batch, 28, 28, weights['channel']],stride, 'SAME') + weights['b4']
+        y = tf.reshape(y, [-1, x_dim])
+
+        return tf.sigmoid(y)
+
+
+
+def construct_weights_generator(z_size=100, dim=64, kernel_size=5, channel_size=1):
+    weights={}
+    weights['dim'] = dim
+    weights['channel'] = channel_size
+    dtype = tf.float32
+    conv_initializer = tf.contrib.layers.xavier_initializer_conv2d(dtype=dtype)
+    fc_initializer = tf.contrib.layers.xavier_initializer(dtype=dtype)
+    k=kernel_size
+
+    weights['w1'] = tf.get_variable('w1', [z_size, 4 * 4 * dim * 4], initializer=fc_initializer, dtype=dtype)
+    weights['b1'] = tf.Variable(tf.zeros([4* 4 * dim * 4]))
+
+    weights['dconv2'] = tf.get_variable('dconv2', [k, k, dim * 4, dim * 2], initializer=conv_initializer, dtype=dtype)
+    weights['b2'] = tf.Variable(tf.zeros([dim*2]))
+
+    weights['dconv3'] = tf.get_variable('dconv3', [k, k, dim*2, dim], initializer=conv_initializer, dtype=dtype)
+    weights['b3'] = tf.Variable(tf.zeros([dim]))
+
+    weights['dconv4'] = tf.get_variable('dconv4', [k, k, dim, channel_size], initializer=conv_initializer, dtype=dtype)
+    weights['b4'] = tf.Variable(tf.zeros([channel_size]))
+
+    return weights
+
+
 
 def discriminator_dcgan_mnist(img, x_shape, dim=64, \
                              kernel_size=5, stride=2, \
@@ -79,7 +135,7 @@ def normalize(inp, activation, reuse, scope, norm='batch_norm', is_training=True
         else:
             return inp
 
-def construct_weights(dim=64, kernel_size=5, channel_size=1, psi=[10, 10], aux=True):
+def construct_weights_discriminator(dim=64, kernel_size=5, channel_size=1, psi=[10, 10], aux=True):
     weights={}
     dtype = tf.float32
     conv_initializer = tf.contrib.layers.xavier_initializer_conv2d(dtype=dtype)
