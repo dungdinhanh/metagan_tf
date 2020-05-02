@@ -563,8 +563,8 @@ class MetaGan(object):
                 # label_real_d_fake = sess.run([self.label_real_d_fake], feed_dict={self.X:im_real_save})
 
                 real_fake = np.asarray(real_fake)
-                label_guess = np.asarray(label_guess)[0]
-                label_real_d = np.asarray(label_real_d)
+                label_guess = np.asarray(label_guess)
+                label_real_d = np.asarray(label_real_d)[0]
                 # label_real_d_fake = np.asarray(label_real_d_fake)[0]
                 im_real_save = np.reshape(im_real_save,
                                           (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
