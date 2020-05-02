@@ -582,7 +582,7 @@ class MetaGan(object):
 
                         class_dir_guess = os.path.join(class_dir, "class_%d"%(int(image_label)))
                         mkdirs(class_dir_guess)
-                        image_path = os.path.join(class_dir_guess, '/image_%05d_confidence%f_real%f.jpg' % (
+                        image_path = os.path.join(class_dir_guess, 'image_%05d_confidence%f_real%f.jpg' % (
                             np.min([v * self.batch_size + ii, self.nb_test_fake]),
                             float(chosen_labels[image_label]), real_percent))
 
