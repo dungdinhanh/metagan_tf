@@ -221,3 +221,82 @@ def label_gen_dcgan_mnist(img, x_shape, prim_y, dim=64, \
         logit2 = tf.nn.softmax(logit2, dim=1) #dim or axis ?
         return mask_softmask(logit2, mask, dim=1)
 
+
+'''
+************************************************************************
+* The small Meta-GAN architecture for CIFAR-10 and CIFAR-100 (32 x 32 x 3)
+************************************************************************
+'''
+
+
+def encoder_dcgan_cifar(img, x_shape, z_dim=128, dim=64, kernel_size=5, \
+                        stride=2, name='encoder', \
+                        reuse=True, training=True):
+    bn = partial(batch_norm, is_training=training)
+    conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
+                            activation_fn=lrelu, biases_initializer=None)
+
+    y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+    with tf.variable_scope(name, reuse=reuse):
+        y = lrelu(conv(y, dim, kernel_size, stride))  # 16 x 16 x dim
+        y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 8 x 8 x dim x 2
+        y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4 x 4 x dim x 4
+        y = conv_bn_lrelu(y, dim * 8, kernel_size, stride)  # 2 x 2 x dim x 8
+        logit = fc(y, z_dim)
+        return logit
+
+
+def generator_dcgan_cifar(z, x_shape, dim=64, kernel_size=5, stride=2, \
+                          name='generator', \
+                          reuse=True, training=True):
+    bn = partial(batch_norm, is_training=training)
+    dconv_bn_relu = partial(dconv, normalizer_fn=bn, \
+                            activation_fn=relu, biases_initializer=None)
+    fc_bn_relu = partial(fc, normalizer_fn=bn, \
+                         activation_fn=relu, biases_initializer=None)
+
+    x_dim = x_shape[0] * x_shape[1] * x_shape[2]
+    with tf.variable_scope(name, reuse=reuse):
+        y = fc_bn_relu(z, 2 * 2 * dim * 8)
+        y = tf.reshape(y, [-1, 2, 2, dim * 8])  # 2 x 2 x dim x 8
+        y = dconv_bn_relu(y, dim * 4, kernel_size, stride)  # 4 x 4 x dim x 4
+        y = dconv_bn_relu(y, dim * 2, kernel_size, stride)  # 8 x 8 x dim x 2
+        y = dconv_bn_relu(y, dim * 1, kernel_size, stride)  # 16 x 16 x dim
+        y = dconv(y, x_shape[2], kernel_size, stride)  # 32 x 32 x 3
+        y = tf.reshape(y, [-1, x_dim])
+        return tf.sigmoid(y)
+
+def meta_discriminator_dcgan_cifar(img, x_shape, dim=64, kernel_size=5, \
+                              stride=2, ss_task=0, \
+                              name='discriminator', \
+                              reuse=True, training=True):
+    bn = partial(batch_norm, is_training=training)
+    conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
+                            activation_fn=lrelu, biases_initializer=None)
+
+    y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+    with tf.variable_scope(name, reuse=reuse):
+        y = lrelu(conv(y, dim, kernel_size, 2))  # 16 x 16 x dim
+        y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 8 x 8 x dim x 2
+        y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4 x 4 x dim x 4
+        y = conv_bn_lrelu(y, dim * 8, kernel_size, stride)  # 2 x 2 x dim x 8
+        feature = y
+        logit = fc(y, 1)
+        if ss_task == 1:
+            k = 4
+        elif ss_task == 2:
+            k = 5
+        else:
+            k = -1
+        if ss_task > 0:
+            print('[net_dcgan.py -- discriminator_dcgan_cifar] SS task = %d with k = %d classes' % (ss_task, k))
+            cls = fc(y, k)
+            return tf.nn.sigmoid(logit), logit, \
+                   tf.reshape(feature, [-1, 2 * 2 * dim * 8]), cls
+        else:
+            return tf.nn.sigmoid(logit), logit, \
+                   tf.reshape(feature, [-1, 2 * 2 * dim * 8])
+
+
+
+
