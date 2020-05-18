@@ -194,7 +194,7 @@ def meta_discriminator_dcgan_mnist(img, x_shape, weights,
         if aux:
             y1 = tf.nn.conv2d(y, weights['conv5'], no_stride, 'VALID') + weights['b5']
             y1 = normalize(y1, tf.nn.leaky_relu, reuse, 'bn3', is_training=training)
-            y1 = tf.nn.leaky_relu(y1)
+            # y1 = tf.nn.leaky_relu(y1)
 
 
             y1 = tf_layers.flatten(y1)
