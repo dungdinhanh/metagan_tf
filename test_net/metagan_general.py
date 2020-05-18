@@ -388,10 +388,9 @@ class MetaGAN(object):
         with tf.variable_scope('discriminator'):
             self.weights = construct_weights(self.df_dim, aux=aux)
             self.D = self.create_discriminator()
-            self.d_real_prim_logits, self.d_real_aux_logits = self.D(self.X, self.data_shape, self.weights, reuse=False,
-                                                                     aux=aux)
+            self.d_real_prim_logits, self.d_real_aux_logits = self.D(self.X, self.data_shape, self.weights, reuse=False)
             self.d_fake_prim_logits, self.d_fake_aux_logits = self.D(self.X_f, self.data_shape, self.weights,
-                                                                     reuse=True, aux=aux)
+                                                                     reuse=True)
 
             self.get_d_fake_prim_sig = tf.nn.sigmoid(self.d_fake_prim_logits)
             self.get_d_fake_aux_sig = self.d_fake_aux_logits
