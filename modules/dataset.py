@@ -230,7 +230,8 @@ class Dataset(object):
         elif self.name in ['imagenet_32']:
              
             batch_index = np.random.randint(self.nb_splits, size=1)[0]
-            np_file = self.source + "/batch_"+str(batch_index)+".npy"
+            np_file = os.path.join(self.source,  "batch_"+str(batch_index)+".npy")
+            # np_file = self.source + "/batch_"+str(batch_index)+".npy"
             print('[dataset.py -- random_mini_batches] processing block: %s for mini-batches generation' % (np_file))
             X_1 = np.load(np_file)
             m = X_1.shape[0] # number of training examples
