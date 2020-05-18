@@ -314,7 +314,7 @@ def construct_weights_discriminator_cifar(dim=64, kernel_size=5, channel_size=3,
 
     # Weights for auxiliary task
     weights['conv6'] = tf.get_variable('conv6', [2, 2, dim * 8, dim * 8], initializer=conv_initializer, dtype=dtype)
-    weights['b6'] = tf.Variable(tf.zeros(dim * 4))
+    weights['b6'] = tf.Variable(tf.zeros(dim * 8))
 
     weights['w7'] = tf.get_variable('w6', [dim * 8, dim*4], initializer=fc_initializer)
     weights['b7'] = tf.Variable(tf.zeros(dim*2))
