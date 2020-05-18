@@ -84,6 +84,7 @@ class Dataset(object):
             self.color_space = 'RGB'
         elif name == 'imagenet_32':
             load_imagenet_32(self.source, self.nb_splits)
+            datablock_preprocess(data_dir, nb_splits)
             self.minibatches = self.random_mini_batches([], self.batch_size, self.seed)
             print('[dataset.py -- __init__] The number of minibatches = %s' % (len(self.minibatches)))
             #self.im_list, \
