@@ -532,7 +532,7 @@ class MetaGAN(object):
                 if step% (self.log_interval * 100) == 0:
                     self.lr_sd = self.lr_sd * 0.5
 
-                if step % (self.log_interval * 10) == 0:
+                if step % (self.log_interval * 1000) == 0:
                     # save real images
                     im_save_path = os.path.join(self.out_dir, 'image_%d_real.jpg' % (step))
                     imsave_batch(mb_X, self.data_shape, im_save_path)
@@ -542,7 +542,7 @@ class MetaGAN(object):
                     mb_X_f = sess.run(self.X_f, feed_dict={self.z: mb_z})
                     imsave_batch(mb_X_f, self.data_shape, im_save_path)
 
-                if step % (self.log_interval * 10) == 0:
+                if step % (self.log_interval * 1000) == 0:
                     def generate_and_save_real_images(real_dir, dataset, nb_test_real, batch_size, data_shape):
                         count = 0
                         for v in range(nb_test_real // batch_size + 1):
