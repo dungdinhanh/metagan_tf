@@ -361,7 +361,7 @@ class MetaGAN(object):
         self.X = tf.placeholder(tf.float32, shape=[self.batch_size, self.data_dim])
         self.z = tf.placeholder(tf.float32, shape=[self.batch_size, self.noise_dim])
         self.zn = tf.placeholder(tf.float32, shape=[None, self.noise_dim])  # to generate flexible number of images
-        self.Y = tf.placeholder(tf.float32, shape=[self.batch_size, self.psi])
+        self.Y = tf.placeholder(tf.float32, shape=[self.batch_size, np.sum(self.psi)])
         self.iteration = tf.placeholder(tf.int32, shape=None)
 
         # create generator
