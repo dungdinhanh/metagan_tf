@@ -283,14 +283,17 @@ class MetaGAN(object):
         return np.random.uniform(-1.0, 1.0, size=[N, self.noise_dim])
 
     def create_discriminator(self):
-        if self.nnet_type == 'dcgan' and self.db_name == 'mnist':
+        if self.nnet_type == 'metagan' and self.db_name == 'mnist':
             return discriminator_dcgan_mnist
         # elif self.nnet_type == 'dcgan' and self.db_name == 'mnist-1k':
         #     return discriminator_dcgan_stacked_mnist
         # elif self.nnet_type == 'dcgan' and self.db_name == 'celeba':
         #     return discriminator_dcgan_celeba
-        elif self.nnet_type == 'dcgan' and self.db_name in ['cifar10', 'cifar100', 'imagenet_32']:
+        elif self.nnet_type == 'metagan' and self.db_name in ['cifar10', 'cifar100', 'imagenet_32']:
             return meta_discriminator_dcgan_cifar
+        else:
+            print('[metagan_general.py -- create_discriminator] The dataset %s are not supported by the network %s' % (
+                self.db_name, self.nnet_type))
 
     def create_generator(self):
         if self.nnet_type == 'metagan' and self.db_name == 'mnist':
@@ -310,7 +313,7 @@ class MetaGAN(object):
         # elif self.nnet_type == 'resnet' and self.db_name == 'stl10':
         #     return generator_resnet_stl10
         else:
-            print('[msdistgan.py -- create_generator] The dataset %s are not supported by the network %s' % (
+            print('[metagan_general.py -- create_generator] The dataset %s are not supported by the network %s' % (
             self.db_name, self.nnet_type))
 
     def create_label_generator(self):
