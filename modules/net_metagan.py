@@ -316,10 +316,10 @@ def construct_weights_discriminator_cifar(dim=64, kernel_size=5, channel_size=3,
     weights['conv6'] = tf.get_variable('conv6', [2, 2, dim * 8, dim * 8], initializer=conv_initializer, dtype=dtype)
     weights['b6'] = tf.Variable(tf.zeros(dim * 8))
 
-    weights['w7'] = tf.get_variable('w6', [dim * 8, dim*4], initializer=fc_initializer)
-    weights['b7'] = tf.Variable(tf.zeros(dim*2))
+    weights['w7'] = tf.get_variable('w7', [dim * 8, dim*4], initializer=fc_initializer)
+    weights['b7'] = tf.Variable(tf.zeros(dim*4))
 
-    weights['w8'] = tf.get_variable('w7', [dim*4, aux_num], initializer=fc_initializer)
+    weights['w8'] = tf.get_variable('w8', [dim*4, aux_num], initializer=fc_initializer)
     weights['b8'] = tf.Variable(tf.zeros(aux_num))
 
     return weights
