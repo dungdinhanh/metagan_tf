@@ -185,31 +185,17 @@ def mask_softmask(x, mask, dim=1):
     logits = tf.math.exp(x - tf.reduce_max(x, 0)) * mask / tf.reduce_sum(tf.math.exp(x - tf.reduce_max(x, 0)) * mask, axis=dim, keepdims=True)
     return logits
 
-
-def label_gen_dcgan_mnist(img, x_shape, prim_y, dim=64, \
+def label_gen_dcgan_mnist(img, x_shape, dim=64, \
                           kernel_size=5, stride=2, \
-                          name='labelgen', psi=[10, 10],\
+                          name='labelgen', psi=10, \
                           reuse=True, training=True):
     bn = partial(batch_norm, is_training=training)
     conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
                             activation_fn=lrelu, biases_initializer=None)
-    aux_num = np.sum(psi)
-    nb = prim_y.shape[0]
-    aux_indices = np.arange(nb, dtype=np.int64)
-    index = np.zeros((nb, len(psi), aux_num)) + 1e-8
-    for i in range(len(psi)):
-        index[:, i, int(np.sum(psi[:i])):np.sum(psi[:i+1])] = 1
-    # index = tf.convert_to_tensor(index)
-    # list_y = tf.convert_to_tensor(prim_y)
-    list_y = prim_y
-    # list_y = tf.dtypes.cast(prim_y, tf.int64)
-    # list_y = tf.reshape(list_y, [list_y.get_shape()[0],])
-    mask = index[aux_indices, list_y]
-    mask = tf.constant(mask, dtype=tf.float32)
-
+    aux_num = psi
     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
 
-    with tf.variable_scope(name, reuse=reuse): #not check yet
+    with tf.variable_scope(name, reuse=reuse):  # not check yet
         y = lrelu(conv(y, dim, kernel_size, stride))  # 14 x 14 x dim
         y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 7  x 7  x dim x 2
         y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4  x 4  x dim x 4
@@ -218,8 +204,43 @@ def label_gen_dcgan_mnist(img, x_shape, prim_y, dim=64, \
         logit2 = fc(y1, dim * 2)
         logit2 = tf.nn.relu(logit2)
         logit2 = fc(logit2, int(aux_num))
-        logit2 = tf.nn.softmax(logit2, dim=1) #dim or axis ?
-        return mask_softmask(logit2, mask, dim=1)
+        logit2 = tf.nn.softmax(logit2, dim=1)  # dim or axis ?
+        return logit2
+
+# def label_gen_dcgan_mnist(img, x_shape, prim_y, dim=64, \
+#                           kernel_size=5, stride=2, \
+#                           name='labelgen', psi=[10, 10],\
+#                           reuse=True, training=True):
+#     bn = partial(batch_norm, is_training=training)
+#     conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
+#                             activation_fn=lrelu, biases_initializer=None)
+#     aux_num = np.sum(psi)
+#     nb = prim_y.shape[0]
+#     aux_indices = np.arange(nb, dtype=np.int64)
+#     index = np.zeros((nb, len(psi), aux_num)) + 1e-8
+#     for i in range(len(psi)):
+#         index[:, i, int(np.sum(psi[:i])):np.sum(psi[:i+1])] = 1
+#     # index = tf.convert_to_tensor(index)
+#     # list_y = tf.convert_to_tensor(prim_y)
+#     list_y = prim_y
+#     # list_y = tf.dtypes.cast(prim_y, tf.int64)
+#     # list_y = tf.reshape(list_y, [list_y.get_shape()[0],])
+#     mask = index[aux_indices, list_y]
+#     mask = tf.constant(mask, dtype=tf.float32)
+#
+#     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+#
+#     with tf.variable_scope(name, reuse=reuse): #not check yet
+#         y = lrelu(conv(y, dim, kernel_size, stride))  # 14 x 14 x dim
+#         y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 7  x 7  x dim x 2
+#         y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4  x 4  x dim x 4
+#         y1 = conv_bn_lrelu(y, dim * 4, 4, 1, padding='VALID')
+#         y1 = tf.nn.leaky_relu(y1)
+#         logit2 = fc(y1, dim * 2)
+#         logit2 = tf.nn.relu(logit2)
+#         logit2 = fc(logit2, int(aux_num))
+#         logit2 = tf.nn.softmax(logit2, dim=1) #dim or axis ?
+#         return mask_softmask(logit2, mask, dim=1)
 
 
 '''
@@ -303,6 +324,7 @@ def construct_weights_discriminator_cifar(dim=64, kernel_size=5, channel_size=3,
 
     return weights
 
+
 def meta_discriminator_dcgan_cifar(img, x_shape, weights, \
                               stride=2, \
                               name='discriminator', \
@@ -361,6 +383,66 @@ def meta_discriminator_dcgan_cifar(img, x_shape, weights, \
         # y = conv_bn_lrelu(y, dim * 8, kernel_size, stride)  # 2 x 2 x dim x 8
         # feature = y
 
+# Please test label generator
+def label_gen_cifar(img, x_shape, dim=64, \
+                          kernel_size=5, stride=2, \
+                          name='labelgen', psi=10, \
+                          reuse=True, training=True):
+    bn = partial(batch_norm, is_training=training)
+    conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
+                            activation_fn=lrelu, biases_initializer=None)
+    aux_num = psi
+    y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+
+    with tf.variable_scope(name, reuse=reuse):  # not check yet
+        y = lrelu(conv(y, dim, kernel_size, stride))  # 16 x 16 x dim
+        y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 8  x 8  x dim x 2
+        y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4  x 4  x dim x 4
+        y = conv_bn_lrelu(y, dim * 8, kernel_size, stride)  # 2  x 2  x dim x 8
+        y1 = conv_bn_lrelu(y, dim * 8, 2, 1, padding='VALID')
+        # y1 = tf.nn.leaky_relu(y1)
+        logit2 = fc(y1, dim * 4)
+        logit2 = tf.nn.relu(logit2)
+        logit2 = fc(logit2, dim * 2)
+        logit2 = tf.nn.relu(logit2)
+        logit2 = fc(logit2, aux_num)
+        logit2 = tf.nn.softmax(logit2, dim=1)  # dim or axis ?
+        return logit2
+
+# def label_gen_cifar(img, x_shape, prim_y, dim=64, \
+#                           kernel_size=5, stride=2, \
+#                           name='labelgen', psi=[10, 10],\
+#                           reuse=True, training=True):
+#     bn = partial(batch_norm, is_training=training)
+#     conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
+#                             activation_fn=lrelu, biases_initializer=None)
+#     aux_num = np.sum(psi)
+#     nb = prim_y.shape[0]
+#     aux_indices = np.arange(nb, dtype=np.int64)
+#     index = np.zeros((nb, len(psi), aux_num)) + 1e-8
+#     for i in range(len(psi)):
+#         index[:, i, int(np.sum(psi[:i])):np.sum(psi[:i+1])] = 1
+#     # index = tf.convert_to_tensor(index)
+#     # list_y = tf.convert_to_tensor(prim_y)
+#     list_y = prim_y
+#     # list_y = tf.dtypes.cast(prim_y, tf.int64)
+#     # list_y = tf.reshape(list_y, [list_y.get_shape()[0],])
+#     mask = index[aux_indices, list_y]
+#     mask = tf.constant(mask, dtype=tf.float32)
+#
+#     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+#
+#     with tf.variable_scope(name, reuse=reuse): #not check yet
+#         y = lrelu(conv(y, dim, kernel_size, stride))  # 14 x 14 x dim
+#         y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 7  x 7  x dim x 2
+#         y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4  x 4  x dim x 4
+#         y1 = conv_bn_lrelu(y, dim * 4, 4, 1, padding='VALID')
+#         y1 = tf.nn.leaky_relu(y1)
+#         logit2 = fc(y1, dim * 2)
+#         logit2 = tf.nn.relu(logit2)
+#         logit2 = fc(logit2, int(aux_num))
+#         logit2 = tf.nn.softmax(logit2, dim=1) #dim or axis ?
+#         return mask_softmask(logit2, mask, dim=1)
 
 
 
