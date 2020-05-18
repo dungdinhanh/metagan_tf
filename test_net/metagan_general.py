@@ -52,7 +52,7 @@ class MetaGAN(object):
                  log_interval=10, \
                  out_dir='./output/', \
                  verbose=True,
-                 psi=10,
+                 psi=[10],
                  lamb_ent=0.2):
         """
         Initializing MS-Dist-GAN model
@@ -602,7 +602,7 @@ class MetaGAN(object):
                     for i in range(170):
                         mb_X, mb_l = self.dataset.next_batch_with_labels()
                         mb_z = self.sample_z(np.shape(mb_X)[0])
-                        mb_Y = np.zeros([np.shape(mb_l)[0], self.psi], dtype=np.float32)
+                        mb_Y = np.zeros([np.shape(mb_l)[0], self.psi[0]], dtype=np.float32)
                         mb_Y[np.arange(np.shape(mb_l)[0]), mb_l[:,0]] =1
 
                         sess.run([self.opt_l], feed_dict={self.X: mb_X, self.Y: mb_Y,self.z: mb_z, self.iteration: step})
