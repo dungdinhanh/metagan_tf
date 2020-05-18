@@ -47,7 +47,7 @@ def datablock_preprocess(source, nb_splits = 32):
     start = time.time()
     im_list  = list_dir(source, 'png')
     nb_imgs  = len(im_list)
-    step = nb_imgs/nb_splits
+    step = int(nb_imgs/nb_splits)
     for nb_block in range(nb_splits):
         X_block = []
         for k in range(step*nb_block, step*(nb_block+1)):

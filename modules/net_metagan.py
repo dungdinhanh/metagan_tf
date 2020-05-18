@@ -9,7 +9,7 @@ from tensorflow.contrib.layers.python import layers as tf_layers
 
 '''
 ************************************************************************
-* The small DC-GAN architecture for MNIST (28 x 28 x 1)
+* The small Meta-GAN architecture for MNIST (28 x 28 x 1)
 ************************************************************************
 '''
 
@@ -266,36 +266,100 @@ def generator_dcgan_cifar(z, x_shape, dim=64, kernel_size=5, stride=2, \
         y = tf.reshape(y, [-1, x_dim])
         return tf.sigmoid(y)
 
-def meta_discriminator_dcgan_cifar(img, x_shape, dim=64, kernel_size=5, \
-                              stride=2, ss_task=0, \
+
+def construct_weights_discriminator_cifar(dim=64, kernel_size=5, channel_size=3, psi=[10]):
+    weights={}
+    dtype = tf.float32
+    conv_initializer = tf.contrib.layers.xavier_initializer_conv2d(dtype=dtype)
+    fc_initializer = tf.contrib.layers.xavier_initializer(dtype=dtype)
+    k=kernel_size
+    channels=channel_size
+    aux_num = np.sum(psi)
+
+    weights['conv1'] = tf.get_variable('conv1', [k, k, channels, dim], initializer=conv_initializer, dtype=dtype)
+    weights['b1'] = tf.Variable(tf.zeros([dim]))
+
+    weights['conv2'] = tf.get_variable('conv2', [k, k, dim, dim * 2], initializer=conv_initializer, dtype=dtype)
+    weights['b2'] = tf.Variable(tf.zeros([dim*2]))
+
+    weights['conv3'] = tf.get_variable('conv3', [k, k, dim*2, dim * 4], initializer=conv_initializer, dtype=dtype)
+    weights['b3'] = tf.Variable(tf.zeros([dim*4]))
+
+    weights['conv4'] = tf.get_variable('conv4', [k, k, dim*4, dim * 8], initializer=conv_initializer, dtype=dtype)
+    weights['b3'] = tf.Variable(tf.zeros([dim*8]))
+
+    weights['w5'] = tf.get_variable('w5', [2 * 2 * dim * 4, 1], initializer=fc_initializer)
+    weights['b4'] = tf.Variable(tf.zeros(1))
+
+    # Weights for auxiliary task
+    weights['conv5'] = tf.get_variable('conv6', [2, 2, dim * 4, dim * 4], initializer=conv_initializer, dtype=dtype)
+    weights['b5'] = tf.Variable(tf.zeros(dim * 4))
+
+    weights['w6'] = tf.get_variable('w6', [dim * 4, dim*2], initializer=fc_initializer)
+    weights['b6'] = tf.Variable(tf.zeros(dim*2))
+
+    weights['w7'] = tf.get_variable('w7', [dim*2, aux_num], initializer=fc_initializer)
+    weights['b7'] = tf.Variable(tf.zeros(aux_num))
+
+    return weights
+
+def meta_discriminator_dcgan_cifar(img, x_shape, weights, \
+                              stride=2, \
                               name='discriminator', \
                               reuse=True, training=True):
-    bn = partial(batch_norm, is_training=training)
-    conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
-                            activation_fn=lrelu, biases_initializer=None)
+    # Remember to set ss_task = 0
+    # bn = partial(batch_norm, is_training=training)
+    # conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
+    #                         activation_fn=lrelu, biases_initializer=None)
 
     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
+    n_stride = stride
+    stride, no_stride = [1, n_stride, n_stride, 1], [1, 1, 1, 1]
     with tf.variable_scope(name, reuse=reuse):
-        y = lrelu(conv(y, dim, kernel_size, 2))  # 16 x 16 x dim
-        y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 8 x 8 x dim x 2
-        y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4 x 4 x dim x 4
-        y = conv_bn_lrelu(y, dim * 8, kernel_size, stride)  # 2 x 2 x dim x 8
-        feature = y
-        logit = fc(y, 1)
-        if ss_task == 1:
-            k = 4
-        elif ss_task == 2:
-            k = 5
-        else:
-            k = -1
-        if ss_task > 0:
-            print('[net_dcgan.py -- discriminator_dcgan_cifar] SS task = %d with k = %d classes' % (ss_task, k))
-            cls = fc(y, k)
-            return tf.nn.sigmoid(logit), logit, \
-                   tf.reshape(feature, [-1, 2 * 2 * dim * 8]), cls
-        else:
-            return tf.nn.sigmoid(logit), logit, \
-                   tf.reshape(feature, [-1, 2 * 2 * dim * 8])
+        y = tf.nn.conv2d(y, weights['conv1'], stride, 'SAME') + weights['b1']  # 16 x 16 x dim
+        y = tf.nn.leaky_relu(y)
+
+        y = tf.nn.conv2d(y, weights['conv2'], stride, 'SAME') + weights['b2']  # 8 x 8 x dim x 2
+        y = normalize(y, tf.nn.leaky_relu, reuse, 'bn1', is_training=training)
+
+        y = tf.nn.conv2d(y, weights['conv3'], stride, 'SAME') + weights['b3']  # 4 x 4 x dim x 4
+        y = normalize(y, tf.nn.leaky_relu, reuse, 'bn2', is_training=training)
+
+        y = tf.nn.conv2d(y, weights['conv4'], stride, 'SAME') + weights['b4']  # 2 x 2 x dim x 8
+        y = normalize(y, tf.nn.leaky_relu, reuse, 'bn3', is_training=training)
+
+        logit = tf_layers.flatten(y)
+        logit1 = tf.matmul(logit, weights['w5']) + weights['b5']
+
+        # For recog task
+        y1 = tf.nn.conv2d(y, weights['conv6'], no_stride, 'VALID') + weights['b6']
+        y1 = normalize(y1, tf.nn.leaky_relu, reuse, 'bn3', is_training=training)
+
+        y1 = tf_layers.flatten(y1)
+        y1 = tf.matmul(y1, weights['b6']) + weights['b6']
+        y1 = tf.nn.relu(y1)
+
+        y1 = tf.matmul(y1, weights['b7']) + weights['b7']
+        logit2 = tf.nn.softmax(y1, dim=1)
+
+        return tf.nn.sigmoid(logit1), logit1, logit2, logit
+
+        # if ss_task == 1:
+        #     k = 4
+        # elif ss_task == 2:
+        #     k = 5
+        # else:
+        #     k = -1
+        # if ss_task > 0:
+        #     print('[net_metagan.py -- meta_discriminator_dcgan_cifar] SS task = %d with k = %d classes' % (ss_task, k))
+        #     cls = fc(y, k)
+        #     return tf.nn.sigmoid(logit1), logit1, \
+        #             logit, cls
+        # y = lrelu(conv(y, dim, kernel_size, 2))  # 16 x 16 x dim
+        # y = conv_bn_lrelu(y, dim * 2, kernel_size, stride)  # 8 x 8 x dim x 2
+        # y = conv_bn_lrelu(y, dim * 4, kernel_size, stride)  # 4 x 4 x dim x 4
+        # y = conv_bn_lrelu(y, dim * 8, kernel_size, stride)  # 2 x 2 x dim x 8
+        # feature = y
 
 
 
