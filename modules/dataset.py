@@ -5,13 +5,15 @@ import sys
 import numpy as np
 import tensorflow as tf
 
+
+
 from modules.mnist    import load_mnist, stacked_mnist_batch
 from modules.celeba   import preprocess, load_celeba
 from modules.cifar    import load_cifar10, load_cifar100
 from modules.stl10    import load_stl10
 from modules.imagenet import load_imagenet_32
 from modules.imutils  import imread
-from modules.dbutils  import list_dir, prepare_image_list
+from modules.dbutils  import list_dir, prepare_image_list, datablock_preprocess
 
 class Dataset(object):
 
@@ -84,7 +86,7 @@ class Dataset(object):
             self.color_space = 'RGB'
         elif name == 'imagenet_32':
             load_imagenet_32(self.source, self.nb_splits)
-            datablock_preprocess(data_dir, nb_splits)
+            datablock_preprocess(self.source, self.nb_splits)
             self.minibatches = self.random_mini_batches([], self.batch_size, self.seed)
             print('[dataset.py -- __init__] The number of minibatches = %s' % (len(self.minibatches)))
             #self.im_list, \
