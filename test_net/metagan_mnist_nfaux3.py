@@ -18,7 +18,7 @@ LABEL_GEN = 'labelgen'
 
 # Only 10 labels for auxiliary tasks
 # No training for fake samples in label generator
-# g_cost = d_prim + d_fake_aux
+# g_cost = d_prim
 # Training label generator by  label of real data
 # Supervised label generator
 
@@ -286,7 +286,7 @@ class MetaGan(object):
             self.g_cost = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_fake_prim_logits,
                                                                                  labels=tf.ones_like(
                                                                                      self.d_fake_prim_logits)))
-            self.g_cost_gan = self.g_cost + self.d_fake_aux
+            self.g_cost_gan = self.g_cost
 
             # Label Generator loss:
             self.l_real = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.label_real_d, labels=self.Y))
@@ -458,7 +458,7 @@ class MetaGan(object):
                     for i in range(170):
                         mb_X, mb_l = self.dataset.next_batch_with_labels()
                         mb_z = self.sample_z(np.shape(mb_X)[0])
-                        mb_Y = np.zeros([np.shape(mb_l)[0], self.psi], dtype=np.float32)
+                        mb_Y = np.zeros([np.shape(mb_l)[0], self.psi], dtype=np.float)
                         mb_Y[np.arange(np.shape(mb_l)[0]), mb_l[:,0]] =1
 
                         sess.run([self.opt_l], feed_dict={self.X: mb_X, self.Y: mb_Y,self.z: mb_z, self.iteration: step})

@@ -149,15 +149,18 @@ def compute_fid_score(dbname = 'cifar10', \
             ls_folder = os.listdir(output_folder)
 
             for gen_path in ls_folder:
+                gen_path = os.path.join(output_folder, gen_path)
+                # print(gen_path)
                 # if i == 0:
                 #     continue
                 # gen_path = os.path.join(input_dir, model, dbname, 'fake_%d/' % i)  # set path to some ground truth images
                 if not os.path.isdir(gen_path):
                     continue
-                fake_signature = gen_path.split("_")
+                fake_signature = gen_path.split("/")[-1].split("_")
                 if fake_signature[0] != 'fake':
                     continue
                 i = int(fake_signature[1])
+                # print(gen_path)
             # for i in range(start,niters+1,step):
             #     gen_path = os.path.join(input_dir, model, dbname, 'fake_%d'%i) # set path to some generated images
                 print('[%s]'%(gen_path))
