@@ -364,7 +364,8 @@ def meta_discriminator_dcgan_cifar(img, x_shape, weights, \
         y1 = tf.matmul(y1, weights['w8']) + weights['b8']
         logit2 = tf.nn.softmax(y1, dim=1)
 
-        return tf.nn.sigmoid(logit1), logit1, logit2, logit
+        return  logit1, logit2,
+        # return  logit1, logit2, tf.nn.sigmoid(logit1), logit
 
         # if ss_task == 1:
         #     k = 4
