@@ -143,7 +143,27 @@ class Dataset(object):
             self.count = self.count + 1
             #print('count = %d' % (self.count))
             return batch
-               
+
+    def next_batch_with_labels(self):
+
+        if self.name in ['mnist', 'cifar10', 'cifar100']:
+            if self.count == len(self.minibatches):
+                self.count = 0
+                self.minibatches, self.minilabels = self.random_mini_batches(self.data.T, self.labels.T,
+                                                                             self.batch_size, self.seed)
+            batch = self.minibatches[self.count]
+            labels = self.minilabels[self.count]
+            self.count = self.count + 1
+            return batch.T, labels.T
+        elif self.name in ['imagenet_32']:
+            if self.count == len(self.minibatches):
+                self.count = 0
+                self.minibatches = self.random_mini_batches([], self.batch_size, self.seed)
+                print('[dataset.py -- next_batch] The number of minibatches = %s' % (len(self.minibatches)))
+            batch = self.minibatches[self.count]
+            self.count = self.count + 1
+            #print('count = %d' % (self.count))
+            return batch
 
     def fixed_mini_batches(self, mini_batch_size = 64):
         if self.name == 'mnist' or self.name == 'cifar10' or self.name == 'cifar100':
