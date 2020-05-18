@@ -307,20 +307,20 @@ def construct_weights_discriminator_cifar(dim=64, kernel_size=5, channel_size=3,
     weights['b3'] = tf.Variable(tf.zeros([dim*4]))
 
     weights['conv4'] = tf.get_variable('conv4', [k, k, dim*4, dim * 8], initializer=conv_initializer, dtype=dtype)
-    weights['b3'] = tf.Variable(tf.zeros([dim*8]))
+    weights['b4'] = tf.Variable(tf.zeros([dim*8]))
 
     weights['w5'] = tf.get_variable('w5', [2 * 2 * dim * 4, 1], initializer=fc_initializer)
-    weights['b4'] = tf.Variable(tf.zeros(1))
+    weights['b5'] = tf.Variable(tf.zeros(1))
 
     # Weights for auxiliary task
-    weights['conv5'] = tf.get_variable('conv6', [2, 2, dim * 4, dim * 4], initializer=conv_initializer, dtype=dtype)
-    weights['b5'] = tf.Variable(tf.zeros(dim * 4))
+    weights['conv6'] = tf.get_variable('conv6', [2, 2, dim * 4, dim * 4], initializer=conv_initializer, dtype=dtype)
+    weights['b6'] = tf.Variable(tf.zeros(dim * 4))
 
-    weights['w6'] = tf.get_variable('w6', [dim * 4, dim*2], initializer=fc_initializer)
-    weights['b6'] = tf.Variable(tf.zeros(dim*2))
+    weights['w7'] = tf.get_variable('w6', [dim * 4, dim*2], initializer=fc_initializer)
+    weights['b7'] = tf.Variable(tf.zeros(dim*2))
 
-    weights['w7'] = tf.get_variable('w7', [dim*2, aux_num], initializer=fc_initializer)
-    weights['b7'] = tf.Variable(tf.zeros(aux_num))
+    weights['w8'] = tf.get_variable('w7', [dim*2, aux_num], initializer=fc_initializer)
+    weights['b8'] = tf.Variable(tf.zeros(aux_num))
 
     return weights
 
@@ -355,13 +355,13 @@ def meta_discriminator_dcgan_cifar(img, x_shape, weights, \
 
         # For recog task
         y1 = tf.nn.conv2d(y, weights['conv6'], no_stride, 'VALID') + weights['b6']
-        y1 = normalize(y1, tf.nn.leaky_relu, reuse, 'bn3', is_training=training)
+        y1 = normalize(y1, tf.nn.leaky_relu, reuse, 'bn4', is_training=training)
 
         y1 = tf_layers.flatten(y1)
-        y1 = tf.matmul(y1, weights['b6']) + weights['b6']
+        y1 = tf.matmul(y1, weights['w7']) + weights['b7']
         y1 = tf.nn.relu(y1)
 
-        y1 = tf.matmul(y1, weights['b7']) + weights['b7']
+        y1 = tf.matmul(y1, weights['w8']) + weights['b8']
         logit2 = tf.nn.softmax(y1, dim=1)
 
         return tf.nn.sigmoid(logit1), logit1, logit2, logit
