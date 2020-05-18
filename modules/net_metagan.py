@@ -295,7 +295,7 @@ def construct_weights_discriminator_cifar(dim=64, kernel_size=5, channel_size=3,
     fc_initializer = tf.contrib.layers.xavier_initializer(dtype=dtype)
     k=kernel_size
     channels=channel_size
-    aux_num = np.sum(psi)
+    aux_num = int(np.sum(psi))
 
     weights['conv1'] = tf.get_variable('conv1', [k, k, channels, dim], initializer=conv_initializer, dtype=dtype)
     weights['b1'] = tf.Variable(tf.zeros([dim]))
@@ -391,7 +391,7 @@ def label_gen_cifar(img, x_shape, dim=64, \
     bn = partial(batch_norm, is_training=training)
     conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
                             activation_fn=lrelu, biases_initializer=None)
-    aux_num = np.sum(psi)
+    aux_num = int(np.sum(psi))
     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
 
     with tf.variable_scope(name, reuse=reuse):  # not check yet
