@@ -187,12 +187,12 @@ def mask_softmask(x, mask, dim=1):
 
 def label_gen_dcgan_mnist(img, x_shape, dim=64, \
                           kernel_size=5, stride=2, \
-                          name='labelgen', psi=10, \
+                          name='labelgen', psi=[10], \
                           reuse=True, training=True):
     bn = partial(batch_norm, is_training=training)
     conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
                             activation_fn=lrelu, biases_initializer=None)
-    aux_num = psi
+    aux_num = np.sum(psi)
     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
 
     with tf.variable_scope(name, reuse=reuse):  # not check yet
@@ -386,12 +386,12 @@ def meta_discriminator_dcgan_cifar(img, x_shape, weights, \
 # Please test label generator
 def label_gen_cifar(img, x_shape, dim=64, \
                           kernel_size=5, stride=2, \
-                          name='labelgen', psi=10, \
+                          name='labelgen', psi=[10], \
                           reuse=True, training=True):
     bn = partial(batch_norm, is_training=training)
     conv_bn_lrelu = partial(conv, normalizer_fn=bn, \
                             activation_fn=lrelu, biases_initializer=None)
-    aux_num = psi
+    aux_num = np.sum(psi)
     y = tf.reshape(img, [-1, x_shape[0], x_shape[1], x_shape[2]])
 
     with tf.variable_scope(name, reuse=reuse):  # not check yet

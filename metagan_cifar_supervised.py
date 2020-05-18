@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 import argparse
 from dcgan import DCGAN
-from test_net.metagan_test_nofakeaux import MetaGan
+from test_net.metagan_general import MetaGAN
 from modules.dataset import Dataset
 from modules.eval import compute_fid_score_mnist
 from modules.fiutils import mkdirs
@@ -137,7 +137,7 @@ if __name__ == '__main__':
     # setup dataset
     dataset = Dataset(name=db_name, source=data_source, \
                       batch_size=batch_size)
-    mtgan = MetaGan(model=model, \
+    mtgan = MetaGAN(model=model, \
                     is_train=is_train, \
                     nb_test_real=nb_test_real, \
                     nb_test_fake=nb_test_fake, \
