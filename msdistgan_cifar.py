@@ -21,7 +21,7 @@ if __name__ == '__main__':
     ********************************************************************
     ''' 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu_id',       type=int,   default=0,                  help='The ID of the specified GPU')
+    parser.add_argument('--gpu_id',       type=str,   default="0",                  help='The ID of the specified GPU')
     parser.add_argument('--is_train',     type=int,   default=1,                  help='train: 1, test: 0')
     parser.add_argument('--db_name',      type=str,   default='cifar10',          help='Database options: cifar10 or cifar100')
     parser.add_argument('--nnet_type',    type=str,   default='resnet',           help='Network architectures: dcgan, sngan and resnet')
@@ -51,7 +51,8 @@ if __name__ == '__main__':
            
     is_train      = opt.is_train # 1 (train model and compute FID after training)
                                  # 0 (compute FID of pre-trained model)
-    
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu_id
     '''
     Number of real or generated samples to compute FID scores
     '''                  
