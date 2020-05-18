@@ -118,8 +118,19 @@ def compute_fid_score(dbname = 'cifar10', \
         sigma_gth = np.load(sigma_gth_file)
         with tf.Session(config=run_config) as sess:
             sess.run(tf.global_variables_initializer())
-            for i in range(start,niters+1,step):
-                gen_path = os.path.join(input_dir, model, dbname, 'fake_%d'%i) # set path to some generated images
+
+            output_folder = os.path.join(input_dir, model, dbname)
+            ls_folder = os.listdir(output_folder)
+
+            for gen_path in ls_folder:
+                if not os.path.isdir(gen_path):
+                    continue
+                fake_signature = gen_path.split("_")
+                if fake_signature[0] != 'fake':
+                    continue
+                i = int(fake_signature[1])
+            # for i in range(start,niters+1,step):
+            #     gen_path = os.path.join(input_dir, model, dbname, 'fake_%d'%i) # set path to some generated images
                 print('[%s]'%(gen_path))
                 mu_gen, sigma_gen = fid._handle_path(gen_path, sess)
                 fid_value = fid.calculate_frechet_distance(mu_gen, sigma_gen, mu_gth, sigma_gth)
@@ -134,8 +145,21 @@ def compute_fid_score(dbname = 'cifar10', \
             sess.run(tf.global_variables_initializer())
             gth_path = os.path.join(input_dir, model, dbname, 'real') # set path to some ground truth images
             mu_gth, sigma_gth = fid._handle_path(gth_path, sess)
-            for i in range(start,niters+1,step):
-                gen_path = os.path.join(input_dir, model, dbname, 'fake_%d'%i) # set path to some generated images
+            output_folder = os.path.join(input_dir, model, dbname)
+            ls_folder = os.listdir(output_folder)
+
+            for gen_path in ls_folder:
+                # if i == 0:
+                #     continue
+                # gen_path = os.path.join(input_dir, model, dbname, 'fake_%d/' % i)  # set path to some ground truth images
+                if not os.path.isdir(gen_path):
+                    continue
+                fake_signature = gen_path.split("_")
+                if fake_signature[0] != 'fake':
+                    continue
+                i = int(fake_signature[1])
+            # for i in range(start,niters+1,step):
+            #     gen_path = os.path.join(input_dir, model, dbname, 'fake_%d'%i) # set path to some generated images
                 print('[%s]'%(gen_path))
                 mu_gen, sigma_gen = fid._handle_path(gen_path, sess)
                 fid_value = fid.calculate_frechet_distance(mu_gen, sigma_gen, mu_gth, sigma_gth)
@@ -185,11 +209,20 @@ def compute_fid_score_mnist(dbname, input_dir, \
 
     m1, s1 = fid.calculate_activation_statistics2(real_act.reshape(nb_train, -1))
 
-    for i in range(start, niters + 1, step):
-        if i == 0:
-            continue
+    output_folder = os.path.join(input_dir, model, dbname)
+    ls_folder = os.listdir(output_folder)
 
-        gen_path = os.path.join(input_dir, model, dbname, 'fake_%d/' % i)  # set path to some ground truth images
+    for gen_path in ls_folder:
+        # if i == 0:
+        #     continue
+        # gen_path = os.path.join(input_dir, model, dbname, 'fake_%d/' % i)  # set path to some ground truth images
+        if not os.path.isdir(gen_path):
+            continue
+        fake_signature = gen_path.split("_")
+        if fake_signature[0] != 'fake':
+            continue
+        i = int(fake_signature[1])
+
 
         # compute statistic for fake samples
         print('[eval.py -- compute_fid_score_mnist] gen_path = %s' % (gen_path))
