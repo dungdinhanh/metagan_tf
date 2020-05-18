@@ -28,7 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--out_dir',      type=str,   default='./output/',        help='The output path of the program')
     parser.add_argument('--data_source',  type=str,   default='./data/imagenet_32/',  help='The dataset path to store (if data is unavailable, it is downloaded automatically)')
     parser.add_argument('--ss_task',      type=int,   default=2,                  help='0: no SS, 1: SS task, 2: MS task (self-supervised task)')
-    parser.add_argument('--n_steps',      type=int,   default=300000,             help='The number of training iterations')
+    parser.add_argument('--n_steps',      type=int,   default=1000,             help='The number of training iterations')
     parser.add_argument('--noise_dim',    type=int,   default=128,                help='The dimension of latent noise')
     parser.add_argument('--batch_size',   type=int,   default=64,                 help='Mini-batch size')
     parser.add_argument('--nb_test_real', type=int,   default=10000,              help='Number of real samples to compute FID')

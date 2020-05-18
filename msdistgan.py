@@ -472,7 +472,7 @@ class MSDistGAN(object):
                        fid.write(str(output_str)+'\n')
                        fid.flush()
 
-                if step % (self.log_interval*1000) == 0:
+                if step % (self.log_interval*10) == 0:
                     # save real images
                     im_save_path = os.path.join(self.out_dir,'image_%d_real.jpg' % (step))
                     imsave_batch(mb_X, self.data_shape, im_save_path)
@@ -494,7 +494,7 @@ class MSDistGAN(object):
                             im_save_path = os.path.join(self.out_dir,'image_%d_mixe_argu.jpg' % (step))
                             imsave_batch(Xarg_mix, self.data_shape, im_save_path)
                                                 
-                if step % (self.log_interval*1000) == 0:
+                if step % (self.log_interval*10) == 0:
                                      
                     if step == 0:
                         real_dir = self.out_dir + '/real/'
