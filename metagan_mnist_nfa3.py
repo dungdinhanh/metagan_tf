@@ -2,7 +2,7 @@ import os, sys
 import numpy as np
 import argparse
 from   dcgan import DCGAN
-from   test_net.metagan_nogradaux_dis import MetaGan
+from test_net.metagan_mnist_nfaux3 import MetaGan
 from   modules.dataset import Dataset
 from   modules.eval import compute_fid_score_mnist
 from   modules.fiutils import mkdirs
@@ -15,7 +15,7 @@ if __name__ == '__main__':
     ********************************************************************
     ''' 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--gpu_id',       type=int,   default=0,               help='The ID of the specified GPU')
+    parser.add_argument('--gpu_id',       type=str,   default="0",               help='The ID of the specified GPU')
     parser.add_argument('--is_train',     type=int,   default=1,               help='1: Training, 2: Computing FID')
     parser.add_argument('--out_dir',      type=str,   default="./output/",     help='The ouput folder')
     parser.add_argument('--data_source',  type=str,   default="./data/mnist/", help='The place of storing MNIST dataset.')
@@ -32,7 +32,8 @@ if __name__ == '__main__':
     parser.add_argument('--model', type=str, default="metagan", help="model name")
         
     opt = parser.parse_args()
-        
+
+    os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu_id
     '''
     ********************************************************************
     * Database and outputs
