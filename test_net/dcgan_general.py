@@ -302,7 +302,8 @@ class DCGAN(object):
                             im_real_save = np.reshape(mb_X,(-1, data_shape[0], data_shape[1], data_shape[2]))
                             for ii in range(np.shape(mb_X)[0]):
                                 if count < nb_test_real:
-                                    real_path = real_dir + '/image_%05d.jpg' % (np.min([v*batch_size + ii, nb_test_real]))
+                                    real_path = os.path.join(real_dir, 'image_%05d.jpg' % (np.min([v*batch_size + ii,
+                                                                                                   nb_test_real])))
                                     imwrite(im_real_save[ii,:,:,:], real_path)                          
                                     count = count + 1
                                          
@@ -322,7 +323,7 @@ class DCGAN(object):
                             im_fake_save = np.reshape(im_fake_save,(-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
                             for ii in range(np.shape(mb_z)[0]):
                                 if count < self.nb_test_fake:
-                                    fake_path = fake_dir + '/image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake]))
+                                    fake_path = os.path.join(fake_dir , 'image_%05d.jpg' % (np.min([v*self.batch_size + ii, self.nb_test_fake])))
                                     imwrite(im_fake_save[ii,:,:,:], fake_path)
                                     count = count + 1
 
