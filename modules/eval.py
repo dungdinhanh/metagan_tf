@@ -164,6 +164,7 @@ def compute_fid_score(dbname = 'cifar10', \
             mu_gth, sigma_gth = fid._handle_path(gth_path, sess)
             output_folder = os.path.join(input_dir, model, dbname)
             ls_folder = os.listdir(output_folder)
+            ls_folder = sort_ls_folder(ls_folder)
 
             for gen_path in ls_folder:
                 gen_path = os.path.join(output_folder, gen_path)
