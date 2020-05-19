@@ -28,6 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--real_dir',     type=str,   default="",              help='If the real samples are existing to compute FID, do not need to create new real ones')
     parser.add_argument('--db_name', type=str, default='cifar10', help='Database options: cifar10 or cifar100')
     parser.add_argument('--model', type=str, default="dcgan", help="model name")
+    parser.add_argument('--load', type=int, default=0, help="load 1 or re-train 0")
     opt = parser.parse_args()
 
     os.environ['CUDA_VISIBLE_DEVICES'] = str(opt.gpu_id)
@@ -40,6 +41,7 @@ if __name__ == '__main__':
     db_name       = opt.db_name
     out_dir       = opt.out_dir
     data_source   = os.path.join("./data", db_name)
+    load = opt.load
 
     
     '''
@@ -150,7 +152,7 @@ if __name__ == '__main__':
     if is_train == 1:
         # setup gan model and train
 
-        dcgan.train()
+        dcgan.train(load)
         compute_fid_score(dbname=db_name, \
                           input_dir=out_dir, \
                           model=model_dir, \

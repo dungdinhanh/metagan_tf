@@ -238,7 +238,7 @@ class DCGAN(object):
         
         self.init = tf.global_variables_initializer()
 
-    def train(self):
+    def train(self, load=0):
         """
         Training the model
         """
@@ -253,8 +253,22 @@ class DCGAN(object):
             
             start = time.time()
             sess.run(self.init)
-                       
-            for step in range(self.n_steps + 1):
+            iter = 0
+            if load == 1:
+                ls_folder = os.listdir(self.ckpt_dir)
+                ls_folder = self.convert_list_string(ls_folder)
+                ls_folder = sorted(ls_folder)
+                if len(ls_folder) != 0:
+                    iter = ls_folder[-1]
+                    folder = os.path.join(self.ckpt_dir, "%d" % iter)
+                    # for folder in list_folders:
+                    ckpt_name = os.path.join(folder, "epoch_%d.ckpt-%d" % (iter, iter))
+                    print(folder)
+                    # iter = int(folder.split("/")[-1])
+                    saver.restore(sess, save_path=ckpt_name)
+            step = iter
+            # for step in range(self.n_steps + 1):
+            while step < self.n_steps + 1:
 
                 # train discriminator
                 mb_X = self.dataset.next_batch()
@@ -332,3 +346,4 @@ class DCGAN(object):
                         os.makedirs(self.ckpt_dir +'%d/'%(step))
                     save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step,step))
                     print('[dcgan.py -- train] the trained model is saved at: % s' % save_path)
+                step += 1
