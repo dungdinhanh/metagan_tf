@@ -3,7 +3,7 @@ import numpy as np
 import argparse
 from   test_net.dcgan_general import DCGAN
 from   modules.dataset import Dataset
-from   modules.eval import compute_fid_score_mnist
+from   modules.eval import compute_fid_score
 from   modules.fiutils import mkdirs
 
 if __name__ == '__main__':
