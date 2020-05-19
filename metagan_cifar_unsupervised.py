@@ -34,6 +34,7 @@ if __name__ == '__main__':
                         help='If the real samples are existing to compute FID, do not need to create new real ones')
     parser.add_argument('--aux', type=int, default=1, help='0 is for dcgan, 1 is for metagan')
     parser.add_argument('--model', type=str, default="metagan", help="model name")
+    parser.add_argument('--colab', type=int, default=0, help="train on colab or not")
 
     opt = parser.parse_args()
 
@@ -44,7 +45,12 @@ if __name__ == '__main__':
     '''
     db_name = opt.db_name   # 'cifar10' or 'cifar100'
     out_dir = opt.out_dir
+    colab = opt.colab
+
     data_source = opt.data_source
+    if colab == 1:
+        out_dir = os.path.join("../drive/My Drive/", out_dir)
+        data_source = os.path.join("../drive/My Drive", data_source)
     if opt.aux == 1:
         aux = True
     else:
