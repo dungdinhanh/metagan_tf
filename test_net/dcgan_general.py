@@ -143,7 +143,7 @@ class DCGAN(object):
     def create_discriminator(self):
         if self.nnet_type == 'dcgan' and self.db_name in ['mnist']:
             return discriminator_dcgan_mnist
-        elif self.nnet_type == 'metagan' and self.db_name in ['cifar10', 'cifar100', 'imagenet_32']:
+        elif self.nnet_type == 'dcgan' and self.db_name in ['cifar10', 'cifar100', 'imagenet_32']:
             return discriminator_dcgan_cifar
         else:
             print('[dcgan.py -- create_discriminator] The dataset %s are not supported by the network %s' %(self.db_name, self.nnet_type));
