@@ -46,13 +46,15 @@ if __name__ == '__main__':
     '''
     db_name = opt.db_name   # 'cifar10' or 'cifar100'
     out_dir = opt.out_dir
+
     colab = opt.colab
     load = opt.load
     psi = [10]
     if db_name == 'cifar100':
         psi=[100]
 
-    data_source = opt.data_source
+    # data_source = opt.data_source
+    data_source = os.path.join("./data", db_name)
     if colab == 1:
         out_dir = os.path.join("../drive/My Drive/", out_dir)
         data_source = os.path.join("../drive/My Drive", data_source)

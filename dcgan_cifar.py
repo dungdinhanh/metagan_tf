@@ -17,7 +17,7 @@ if __name__ == '__main__':
     parser.add_argument('--gpu_id',       type=int,   default=0,               help='The ID of the specified GPU')
     parser.add_argument('--is_train',     type=int,   default=1,               help='1: Training, 2: Computing FID')
     parser.add_argument('--out_dir',      type=str,   default="./output/",     help='The ouput folder')
-    parser.add_argument('--data_source',  type=str,   default="./data/mnist/", help='The place of storing MNIST dataset.')
+    parser.add_argument('--data_source',  type=str,   default="./data/cifar10/", help='The place of storing MNIST dataset.')
     parser.add_argument('--nb_test_real', type=int,   default=10000,           help='Number of real samples to compute FID')
     parser.add_argument('--nb_test_fake', type=int,   default=10000,           help='Number of fake samples to compute FID')
     parser.add_argument('--n_steps',      type=int,   default=400000,          help='The number of training iterations')
@@ -39,7 +39,8 @@ if __name__ == '__main__':
     '''
     db_name       = opt.db_name
     out_dir       = opt.out_dir
-    data_source   = opt.data_source
+    data_source   = os.path.join("./data", db_name)
+
     
     '''
     1: To train model and compute FID after training

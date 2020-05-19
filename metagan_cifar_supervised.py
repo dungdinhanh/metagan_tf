@@ -44,7 +44,8 @@ if __name__ == '__main__':
     '''
     db_name = opt.db_name   # 'cifar10' or 'cifar100'
     out_dir = opt.out_dir
-    data_source = opt.data_source
+    # data_source = opt.data_source
+    data_source = os.path.join("./data", db_name)
     psi=[10]
     if db_name == 'cifar100':
         psi=[100]
