@@ -531,7 +531,7 @@ class MetaGAN(object):
                         mb_Y = np.zeros([np.shape(mb_l)[0], self.psi[0]], dtype=np.float32)
                         mb_Y[np.arange(np.shape(mb_l)[0]), mb_l[:,0]] =1
 
-                        sess.run([self.opt_l], feed_dict={self.X: mb_X, self.Y: mb_Y,self.z: mb_z, self.iteration: step})
+                        sess.run([self.opt_l], feed_dict={self.X: mb_X, self.l_rsd: [self.lr_sd], self.iteration: step})
 
                         if step1 % self.log_interval == 0:
                             if self.verbose:
