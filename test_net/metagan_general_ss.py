@@ -293,11 +293,9 @@ class MetaGAN(object):
                 self.penalty = tf.reduce_mean((slopes - 1) ** 2)
             # For 2nd derivatives
             self.d_real_prim_logits_l, self.d_real_aux_logits_l = self.D(self.X, self.data_shape, self.weights,
-                                                                         reuse=True, name=DISCRIMINATOR,
-                                                                         aux=aux)
+                                                                         reuse=True, name=DISCRIMINATOR)
             self.d_fake_prim_logits_l, self.d_fake_aux_logits_l = self.D(self.X_f, self.data_shape, self.weights,
-                                                                         reuse=True, name=DISCRIMINATOR,
-                                                                         aux=aux)
+                                                                         reuse=True, name=DISCRIMINATOR)
 
             self.d_real_l = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(logits=self.d_real_prim_logits_l,
                                                                                    labels=tf.ones_like(
@@ -318,11 +316,9 @@ class MetaGAN(object):
                 zip(self.weights.keys(),
                     [self.weights[key] - self.l_rsd[0] * gradients[key] for key in self.weights.keys()]))
             self.d_real_prim_logits_l2, self.d_real_aux_logits_l2 = self.D(self.X, self.data_shape, fast_weights,
-                                                                           reuse=True, name=DISCRIMINATOR,
-                                                                           aux=aux)
+                                                                           reuse=True, name=DISCRIMINATOR)
             self.d_fake_prim_logits_l2, self.d_fake_aux_logits_l2 = self.D(self.X_f, self.data_shape, fast_weights,
-                                                                           reuse=True, name=DISCRIMINATOR,
-                                                                           aux=aux)
+                                                                           reuse=True, name=DISCRIMINATOR)
 
 
         # Original losses with log function
