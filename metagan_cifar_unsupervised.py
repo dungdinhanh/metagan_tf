@@ -46,6 +46,9 @@ if __name__ == '__main__':
     db_name = opt.db_name   # 'cifar10' or 'cifar100'
     out_dir = opt.out_dir
     colab = opt.colab
+    psi = [10]
+    if db_name == 'cifar100':
+        psi=[100]
 
     data_source = opt.data_source
     if colab == 1:
@@ -160,7 +163,7 @@ if __name__ == '__main__':
                     dataset=dataset, \
                     n_steps=n_steps, \
                     out_dir=base_dir,
-                    lamb_ent=lambda_ent)
+                    lamb_ent=lambda_ent, psi=psi)
 
     if is_train == 1:
         # setup gan model and train

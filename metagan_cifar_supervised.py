@@ -45,6 +45,9 @@ if __name__ == '__main__':
     db_name = opt.db_name   # 'cifar10' or 'cifar100'
     out_dir = opt.out_dir
     data_source = opt.data_source
+    psi=[10]
+    if db_name == 'cifar100':
+        psi=[100]
     colab = opt.colab
     if colab == 1:
         out_dir = os.path.join("../drive/My Drive/", out_dir)
@@ -158,7 +161,7 @@ if __name__ == '__main__':
                     dataset=dataset, \
                     n_steps=n_steps, \
                     out_dir=base_dir,
-                    lamb_ent=lambda_ent)
+                    lamb_ent=lambda_ent, psi=psi)
 
     if is_train == 1:
         # setup gan model and train
