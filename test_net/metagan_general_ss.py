@@ -456,8 +456,8 @@ class MetaGAN(object):
                         fid.write(str(output_str) + '\n')
                         fid.flush()
 
-                if step% (self.log_interval * 170) == 0:
-                    self.lr_sd = self.lr_sd * 0.5
+
+
 
                 if step % (self.log_interval * 1000) == 0:
                     # save real images
@@ -527,6 +527,7 @@ class MetaGAN(object):
 
 
                 if step % 170 == 0:
+
                     print("Training Label generator")
                     for i in range(170):
                         mb_X, mb_l = self.dataset.next_batch_with_labels()
@@ -554,6 +555,7 @@ class MetaGAN(object):
                                 fid_lb.write(str(output_str) + '\n')
                                 fid_lb.flush()
                         step1 += 1
+                    self.lr_sd = self.lr_sd * 0.5
 
                 if step % 25000 == 0:
                     if not os.path.exists(self.ckpt_dir + '%d/' % (step)):
