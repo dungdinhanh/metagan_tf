@@ -173,9 +173,7 @@ def compute_fid_score(dbname = 'cifar10', \
                 
         #np.save(mu_gth_file, mu_gth)
         #np.save(sigma_gth_file, sigma_gth)
-    
     fid_log.close()
-    
     return fid_value
 
 
