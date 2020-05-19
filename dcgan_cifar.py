@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
     # setup dataset
     dataset = Dataset(name=db_name, source=data_source, \
-                               batch_size=batch_size, percent = percent)
+                               batch_size=batch_size)
     dcgan = DCGAN(model=model, \
                   is_train=is_train, \
                   nb_test_real=nb_test_real, \
