@@ -120,6 +120,7 @@ class DCGAN(object):
         # others
         self.out_dir      = out_dir
         self.ckpt_dir     = out_dir + '/model/' # save pre-trained model
+        os.makedirs(self.ckpt_dir, exist_ok=True)
         self.log_file     = out_dir + '.txt'    # save log files
         self.log_interval = log_interval
                 
