@@ -1,7 +1,7 @@
 import os, sys
 import numpy as np
 import argparse
-from   dcgan import DCGAN
+from   test_net.dcgan_general import DCGAN
 from   modules.dataset import Dataset
 from   modules.eval import compute_fid_score_mnist
 from   modules.fiutils import mkdirs
