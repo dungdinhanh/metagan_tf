@@ -28,6 +28,7 @@ if __name__ == '__main__':
     parser.add_argument('--real_dir',     type=str,   default="",              help='If the real samples are existing to compute FID, do not need to create new real ones')
     parser.add_argument('--db_name', type=str, default='cifar10', help='Database options: cifar10 or cifar100')
     parser.add_argument('--model', type=str, default="dcgan", help="model name")
+    parser.add_argument('--colab', type=int, default=0, help="train on colab or not")
     parser.add_argument('--load', type=int, default=0, help="load 1 or re-train 0")
     opt = parser.parse_args()
 
@@ -42,7 +43,10 @@ if __name__ == '__main__':
     out_dir       = opt.out_dir
     data_source   = os.path.join("./data", db_name)
     load = opt.load
-
+    colab = opt.colab
+    if colab == 1:
+        out_dir = os.path.join("../drive/My Drive/", out_dir)
+        data_source = os.path.join("../drive/My Drive", data_source)
     
     '''
     1: To train model and compute FID after training
