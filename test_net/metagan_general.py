@@ -473,7 +473,16 @@ class MetaGAN(object):
 
         self.init = tf.global_variables_initializer()
 
-    def train(self):
+    @staticmethod
+    def convert_list_string(list_str):
+        new_list = []
+        for name in list_str:
+            iter = int(name)
+            new_list.append(iter)
+        return new_list
+
+
+    def train(self, load=0):
         """
         Training the model
         """
@@ -498,14 +507,30 @@ class MetaGAN(object):
 
             start = time.time()
             sess.run(self.init)
-
+            iter = 0
+            if load == 1:
+                ls_folder = os.listdir(self.ckpt_dir)
+                ls_folder = self.convert_list_string(ls_folder)
+                ls_folder = sorted(ls_folder)
+                if len(ls_folder) != 0:
+                    iter = ls_folder[-1]
+                    folder = os.path.join(self.ckpt_dir, "%d" % iter)
+                    # for folder in list_folders:
+                    ckpt_name = os.path.join(folder, "epoch_%d.ckpt-%d" % (iter, iter))
+                    print(folder)
+                    # iter = int(folder.split("/")[-1])
+                    saver.restore(sess, save_path=ckpt_name)
             print("Training generator and discriminator")
-            for step in range(self.n_steps + 1):
+            # for step in range(self.n_steps + 1):
+            step = iter
+                
+            while step < self.n_steps + 1:
 
                 # train discriminator
                 mb_X = self.dataset.next_batch()
                 mb_z = self.sample_z(np.shape(mb_X)[0])
                 sess.run([self.opt_d], feed_dict={self.X: mb_X, self.z: mb_z, self.iteration: step})
+
 
                 # train generator
                 mb_X = self.dataset.next_batch()
@@ -634,6 +659,7 @@ class MetaGAN(object):
                     save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step, step), global_step=step)
                     print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
                     # print('[metagan.py -- train D and G] the trained model is saved at: % s' % save_path)
+                step += 1
 
     @staticmethod
     def get_log_string_csv(image_id, image_label, real_percent, np_array, real_label=None):

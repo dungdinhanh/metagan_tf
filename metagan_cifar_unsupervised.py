@@ -35,6 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--aux', type=int, default=1, help='0 is for dcgan, 1 is for metagan')
     parser.add_argument('--model', type=str, default="metagan", help="model name")
     parser.add_argument('--colab', type=int, default=0, help="train on colab or not")
+    parser.add_argument('--load', type=int, default=0, help="load 1 or re-train 0")
 
     opt = parser.parse_args()
 
@@ -46,6 +47,7 @@ if __name__ == '__main__':
     db_name = opt.db_name   # 'cifar10' or 'cifar100'
     out_dir = opt.out_dir
     colab = opt.colab
+    load = opt.load
     psi = [10]
     if db_name == 'cifar100':
         psi=[100]
@@ -167,7 +169,7 @@ if __name__ == '__main__':
 
     if is_train == 1:
         # setup gan model and train
-        mtgan.train()
+        mtgan.train(load)
         compute_fid_score(dbname=db_name, \
                           input_dir=out_dir, \
                           model=model_dir, \
