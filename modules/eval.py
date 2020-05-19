@@ -86,6 +86,23 @@ def compute_mode_kl(fake_source, is_train = 0, ext='jpg', out_dir='./output/mnis
         
         return numModes, KL
 
+def sort_ls_folder(ls_folder):
+    n = len(ls_folder)
+    Y = []
+    for i in range(n):
+        name = ls_folder[i]
+        sigs = name.split("_")
+        if len(sigs) == 1:
+            Y.append(0)
+            continue
+        if sigs[0] != 'fake':
+            Y.append(0)
+            continue
+        m = int(sigs[1])
+        Y.append(m)
+    Z = [x for _, x in sorted(zip(Y, ls_folder))]
+    return Z
+
 
 def compute_fid_score(dbname = 'cifar10', \
                       input_dir  = '../../gan/output/', \
@@ -121,7 +138,7 @@ def compute_fid_score(dbname = 'cifar10', \
 
             output_folder = os.path.join(input_dir, model, dbname)
             ls_folder = os.listdir(output_folder)
-
+            ls_folder = sort_ls_folder(ls_folder)
             for gen_path in ls_folder:
                 if not os.path.isdir(gen_path):
                     continue
