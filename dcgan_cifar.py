@@ -150,13 +150,16 @@ if __name__ == '__main__':
         # setup gan model and train
 
         dcgan.train()
+        compute_fid_score(dbname=db_name, \
+                          input_dir=out_dir, \
+                          model=model_dir, \
+                          nb_train=nb_test_real, \
+                          nb_test=nb_test_fake)
 
     elif is_train == 0:
         # compute fid score
-        compute_fid_score_mnist(dbname = db_name,       \
-                                input_dir = out_dir,    \
-                                gth_path  = real_dir,   \
-                                model = model_dir,      \
-                                nb_train = nb_test_real,\
-                                nb_test  = nb_test_fake,\
-                                niters   = n_steps)
+        compute_fid_score(dbname=db_name, \
+                          input_dir=out_dir, \
+                          model=model_dir, \
+                          nb_train=nb_test_real, \
+                          nb_test=nb_test_fake)

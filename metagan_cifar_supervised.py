@@ -4,7 +4,7 @@ import argparse
 from dcgan import DCGAN
 from test_net.metagan_general import MetaGAN
 from modules.dataset import Dataset
-from modules.eval import compute_fid_score_mnist
+from modules.eval import compute_fid_score
 from modules.fiutils import mkdirs
 from   modules.eval import compute_fid_score
 
