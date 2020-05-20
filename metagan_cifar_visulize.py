@@ -23,7 +23,7 @@ if __name__ == '__main__':
     parser.add_argument('--data_source', type=str, default="./data/cifar10/", help='The place of storing MNIST dataset.')
     parser.add_argument('--nb_test_real', type=int, default=10000, help='Number of real samples to compute FID')
     parser.add_argument('--nb_test_fake', type=int, default=10000, help='Number of fake samples to compute FID')
-    parser.add_argument('--n_steps', type=int, default=400000, help='The number of training iterations')
+    parser.add_argument('--n_steps', type=int, default=500000, help='The number of training iterations')
     parser.add_argument('--noise_dim', type=int, default=128, help='The dimension of latent noise')
     parser.add_argument('--batch_size', type=int, default=64, help='Mini-batch size')
     parser.add_argument('--lambda_gp', type=float, default=0.0, help='The gradient penalty term')
