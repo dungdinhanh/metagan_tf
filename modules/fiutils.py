@@ -15,7 +15,7 @@ def extract_filename_of(filepath):
 def mkdirs(new_dir):
     if not os.path.exists(new_dir):
         print('[fiutils.py -- mkdirs] creating dir: %s' % (new_dir))
-        os.makedirs(new_dir)
+        os.makedirs(new_dir, exist_ok=True)
 
 def copy_all_files(src_dir, dst_dir):
     src_files = os.listdir(src_dir)
