@@ -12,6 +12,7 @@ import tensorflow as tf
 import time
 import warnings
 from modules.fiutils import mkdirs
+import glob
 
 
 DISCRIMINATOR = 'discriminator'
@@ -570,6 +571,150 @@ class MetaGAN(object):
             log_string += "%f, " % element
         log_string += "\n"
         return log_string
+
+    def checkpoint_train_history(self):
+        list_iters = glob.glob(os.path.join(self.ckpt_dir, "*"))
+        for iter in list_iters:
+            n_iter = os.path.basename(iter)
+            n_iter = int(n_iter)
+            self.checkpoint_train(n_iter)
+        pass
+
+    def checkpoint_train(self, iter):
+        """
+        Training the model
+        """
+        # aux = False
+        # Generating real
+        run_config = tf.ConfigProto()
+        run_config.gpu_options.allow_growth = True
+        out_dir = os.path.join(self.out_dir, 'test_label_generator')
+        mkdirs(out_dir)
+        real_test_dir = os.path.join(out_dir, 'real_test_discriminator_%d' % iter)
+        mkdirs(real_test_dir)
+
+
+        real_dir = os.path.join(real_test_dir, "real")
+        mkdirs(real_dir)
+        self.log_file_classification_real = os.path.join(real_dir, "classification.csv")
+        self.log_file_classification_label_real = os.path.join(real_dir, "label_generator.csv")
+        f_real = open(self.log_file_classification_real, "w")
+        f_label_real = open(self.log_file_classification_label_real, "w")
+
+
+        im_fake_dir = os.path.join(real_test_dir, "fake")
+        mkdirs(im_fake_dir)
+        self.log_file_classification_fake = os.path.join(im_fake_dir, "classification.csv")
+        self.log_file_classification_label_fake= os.path.join(im_fake_dir, "label_generator.csv")
+
+        f_fake = open(self.log_file_classification_fake, "w")
+        f_label_fake = open(self.log_file_classification_label_fake, "w")
+
+        saver = tf.train.Saver(var_list=self.vars_g_save + self.vars_d_save + self.vars_l_save, max_to_keep=1)
+
+        with tf.Session(config=run_config) as sess:
+            sess.run(self.init)
+            folder = os.path.join(self.ckpt_dir, "%d" % iter)
+            # for folder in list_folders:
+            ckpt_name = os.path.join(folder, "epoch_%d.ckpt-%d" % (iter, iter))
+            print(folder)
+            # iter = int(folder.split("/")[-1])
+            saver.restore(sess, save_path=ckpt_name)
+            count = 0
+
+            print("Classifying real")
+            for v in range(self.nb_test_fake // self.batch_size + 1):
+                mb_X, mb_l = self.dataset.next_batch_with_labels()
+                # mb_z = self.sample_z(np.shape(mb_X)[0])
+
+                im_real_save = mb_X
+                real_fake, label_guess = sess.run([self.get_d_real_prim_sig, self.get_d_real_aux_sig],
+                                                  feed_dict={self.X: im_real_save})
+                label_real_d = sess.run([self.label_real_d], feed_dict={self.X: im_real_save})
+
+                # label_real_d_fake = sess.run([self.label_real_d_fake], feed_dict={self.X:im_real_save})
+
+                real_fake = np.asarray(real_fake)
+                label_guess = np.asarray(label_guess)
+                label_real_d = np.asarray(label_real_d)[0]
+                # label_real_d_fake = np.asarray(label_real_d_fake)[0]
+                im_real_save = np.reshape(im_real_save,
+                                          (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
+
+                for ii in range(np.shape(mb_X)[0]):
+                    if count < self.nb_test_fake:
+                        chosen_labels = label_guess[ii]
+                        real_percent = float(real_fake[ii])
+                        label_gen = label_real_d[ii]
+                        image_label = np.argmax(chosen_labels)
+                        real_label = mb_l[ii]
+
+                        class_dir = os.path.join(real_dir, "class_%d" % int(real_label))
+                        mkdirs(class_dir)
+
+                        class_dir_guess = os.path.join(class_dir, "class_%d"%(int(image_label)))
+                        mkdirs(class_dir_guess)
+                        image_path = os.path.join(class_dir_guess, 'image_%05d_confidence%f_real%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                            float(chosen_labels[image_label]), real_percent))
+
+                        log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                                                    image_label, real_percent *100, chosen_labels, real_label)
+                        log_string_label = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                                                   image_label, real_percent * 100,label_gen, real_label)
+
+
+                        f_real.write(log_string_fake)
+                        f_real.flush()
+
+                        f_label_real.write(log_string_label)
+                        f_label_real.flush()
+
+
+                        imwrite(im_real_save[ii, :, :, :], image_path)
+                        count = count + 1
+
+            print("Generating fake")
+            count = 0
+            for v in range(self.nb_test_fake // self.batch_size + 1):
+                mb_z = self.sample_z(self.batch_size)
+                im_fake_save = sess.run(self.X_f, feed_dict={self.z: mb_z})
+                real_fake, label_guess = sess.run([self.get_d_fake_prim_sig, self.get_d_fake_aux_sig],
+                                                  feed_dict={self.X_f: im_fake_save})
+                label_fake_d = sess.run([self.label_fake_d], feed_dict={self.X_f: im_fake_save})
+
+                real_fake = np.asarray(real_fake)
+                label_guess = np.asarray(label_guess)
+                im_real_save = np.reshape(im_fake_save,
+                                          (-1, self.data_shape[0], self.data_shape[1], self.data_shape[2]))
+                label_fake_d = np.asarray(label_fake_d)[0]
+
+                for ii in range(np.shape(im_fake_save)[0]):
+                    if count < self.nb_test_fake:
+                        chosen_labels = label_guess[ii]
+                        label_gen = label_fake_d[ii]
+                        real_percent = float(real_fake[ii])
+                        image_label = np.argmax(chosen_labels)
+
+                        label_folder = os.path.join(im_fake_dir, "class_%d" % (int(image_label)))
+                        mkdirs(label_folder)
+                        fake_path_image = os.path.join(label_folder, 'image_%05d_confidence%f.jpg' % (
+                            np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                            float(chosen_labels[image_label])))
+                        log_string_fake = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                                                  image_label, real_percent * 100, chosen_labels)
+                        log_string_label_gen = self.get_log_string_csv(np.min([v * self.batch_size + ii, self.nb_test_fake]),
+                                                                       image_label, real_percent * 100, label_gen)
+
+                        f_fake.write(log_string_fake)
+                        f_fake.flush()
+
+                        f_label_fake.write(log_string_label_gen)
+                        f_label_fake.flush()
+
+                        imwrite(im_real_save[ii, :, :, :], fake_path_image)
+                        count = count + 1
+
 
     # def create_model(self):
     #
