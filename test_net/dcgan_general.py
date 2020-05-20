@@ -342,7 +342,7 @@ class DCGAN(object):
                                     imwrite(im_fake_save[ii,:,:,:], fake_path)
                                     count = count + 1
 
-                if step > 0 and step % int(self.n_steps/2) == 0:
+                if step > 0 and step % 25000 == 0:
                     if not os.path.exists(self.ckpt_dir +'%d/'%(step)):
                         os.makedirs(self.ckpt_dir +'%d/'%(step))
                     save_path = saver.save(sess, '%s%d/epoch_%d.ckpt' % (self.ckpt_dir, step,step))
