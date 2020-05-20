@@ -239,6 +239,14 @@ class DCGAN(object):
         
         self.init = tf.global_variables_initializer()
 
+    @staticmethod
+    def convert_list_string(list_str):
+        new_list = []
+        for name in list_str:
+            iter = int(name)
+            new_list.append(iter)
+        return new_list
+
     def train(self, load=0):
         """
         Training the model
